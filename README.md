@@ -1,3 +1,5 @@
 # The Scent Map
-<hr>
-![ScentMap Logo](scentmap.png)
+
+<img src="scentmap.png"/>
+
+

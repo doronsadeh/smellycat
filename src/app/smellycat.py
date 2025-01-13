@@ -6,15 +6,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
-from matplotlib.colors import rgb2hex
 from paho.mqtt import client as mqtt_client
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 
 
 class SmellyCat:
     # Process only 1 in N messages to avoid piling up messages
-    RPOCESS_EVERY_1_IN_N_MESSAGES = 3
+    RPOCESS_EVERY_1_IN_N_MESSAGES = 1
 
     msg_count = 0
 
@@ -40,6 +40,9 @@ class SmellyCat:
             'gas_resistance7',
         ])
 
+        # Convert PCA results to a DataFrame for easier handling
+        self.plot_df = pd.DataFrame(columns=['R', 'G', 'B'])
+
     class SensorData:
         def __init__(self, sensor_id, sensor_values):
             self.sensor_id = sensor_id
@@ -49,29 +52,94 @@ class SmellyCat:
             self.humidity = sensor_values[3]
             self.gas_resistance = sensor_values[4]
 
-    def reducer(self, df, plot=True):
-        # Perform PCA to reduce to 2 dimensions
-        pca = PCA(n_components=3)
-        pca_result = pca.fit_transform(df)
+    import numpy as np
 
-        # Create a DataFrame for the PCA results
-        pca_df = pd.DataFrame(pca_result, columns=['R', 'G', 'B'])
+    def oklab_to_srgb(self, L, a, b):
+        """Convert Oklab values to sRGB values."""
+        # Step 1: Convert Oklab to Linear RGB
+        l = L + 0.3963377774 * a + 0.2158037573 * b
+        m = L - 0.1055613458 * a - 0.0638541728 * b
+        s = L - 0.0894841775 * a - 1.2914855480 * b
+
+        l3 = l ** 3
+        m3 = m ** 3
+        s3 = s ** 3
+
+        R_linear = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3
+        G_linear = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3
+        B_linear = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3
+
+        # Step 2: Convert Linear RGB to sRGB
+        def linear_to_srgb(x):
+            return 12.92 * x if x <= 0.0031308 else 1.055 * (x ** (1 / 2.4)) - 0.055
+
+        R = linear_to_srgb(R_linear)
+        G = linear_to_srgb(G_linear)
+        B = linear_to_srgb(B_linear)
+
+        # Clamp values to [0, 1] and scale to [0, 255]
+        R = np.clip(R, 0, 1) * 255
+        G = np.clip(G, 0, 1) * 255
+        B = np.clip(B, 0, 1) * 255
+
+        return (int(R), int(G), int(B))
+
+    def features_to_oklab_color(self, feature_vectors):
+        """
+        Convert 8D feature vectors into Oklab-based RGB colors.
+
+        Parameters:
+            feature_vectors (numpy.ndarray): Array of shape (n_samples, 8), representing feature vectors.
+
+        Returns:
+            list: List of RGB tuples corresponding to each feature vector.
+        """
+        # Step 1: Normalize the feature vectors
+        scaler = MinMaxScaler()
+        normalized_features = scaler.fit_transform(feature_vectors)
+
+        # Step 2: Dimensionality reduction to 3D using PCA
+        pca = PCA(n_components=3)
+        reduced_features = pca.fit_transform(normalized_features)
+
+        # Step 3: Scale reduced features to valid Oklab ranges
+        # Oklab ranges: L ∈ [0, 1], a and b roughly in [-1, 1] (scaled appropriately)
+        oklab_scaler = MinMaxScaler(feature_range=(0, 1))
+        reduced_features[:, 0] = oklab_scaler.fit_transform(reduced_features[:, [0]].reshape(-1, 1)).flatten()
+        reduced_features[:, 1:] = reduced_features[:, 1:]  # Centered around 0 naturally by PCA
+
+        reduced_features = np.mean(reduced_features, axis=0).reshape(1, -1)
+
+        # Step 4: Convert Oklab to sRGB
+        rgb_colors = [self.oklab_to_srgb(L, a, b) for L, a, b in reduced_features]
+        return rgb_colors, reduced_features
+
+    def reducer(self, arr, plot=False):
+        rgb, reduced_features = self.features_to_oklab_color(arr)
 
         if plot:
-            # Plot the 2D PCA results
-            plt.figure(figsize=(8, 6))
-            plt.scatter(pca_df['R'], pca_df['G'], pca_df['B'], alpha=0.7, c='blue', edgecolor='k')
-            plt.title('RGB Space of Sensor Data (PCA Reduced to 3 Dimensions)')
-            plt.xlabel('R')
-            plt.ylabel('G')
-            plt.ylabel('B')
-            plt.grid(True)
+            self.plot_df = pd.concat([self.plot_df, pd.DataFrame(reduced_features, columns=['R', 'G', 'B'])], axis=0)
+
+            # Create a 3D plot
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(111, projection='3d')
+
+            # Scatter plot
+            ax.scatter(
+                self.plot_df['R'], self.plot_df['B'], self.plot_df['B'],
+                c='blue', alpha=0.7, edgecolor='k'
+            )
+
+            # Add labels and a title
+            ax.set_title("RGB Plot")
+            ax.set_xlabel("R")
+            ax.set_ylabel("G")
+            ax.set_zlabel("B")
+
+            # Show the plot
             plt.show()
 
-            # Print explained variance ratio
-            print("Explained Variance Ratio:", pca.explained_variance_ratio_)
-
-        return pca_df.to_dict(orient='records'), pca.explained_variance_ratio_
+        return rgb, reduced_features
 
     def biased_average(self, data, p):
         """
@@ -103,28 +171,17 @@ class SmellyCat:
 
         return _smell, _temperature, _pressure, _humidity
 
-    def feature_space_to_RGB(self, df):
-        scaler = StandardScaler()
-        normalized_data = scaler.fit_transform(df[['temperature',
-                                                   'pressure',
-                                                   'humidity',
-                                                   'gas_resistance0',
-                                                   'gas_resistance1',
-                                                   'gas_resistance2',
-                                                   'gas_resistance3',
-                                                   'gas_resistance4',
-                                                   'gas_resistance5',
-                                                   'gas_resistance6',
-                                                   'gas_resistance7'
-                                                   ]])
+    def feature_space_to_RGB(self, df, plot=False):
+        rgb, reduced_features = self.reducer(df[['gas_resistance0',
+                                                 'gas_resistance1',
+                                                 'gas_resistance2',
+                                                 'gas_resistance3',
+                                                 'gas_resistance4',
+                                                 'gas_resistance5',
+                                                 'gas_resistance6',
+                                                 'gas_resistance7']], plot=plot)
 
-        rgb_dict, var_ratio = self.reducer(normalized_data, plot=False)
-
-        rgb_df = pd.DataFrame(rgb_dict)
-        scaler = MinMaxScaler()
-        scaled_RGB = np.mean(scaler.fit_transform(rgb_df)*255.0, axis=1).astype(int)
-
-        return scaled_RGB, var_ratio
+        return rgb, reduced_features
 
     def process_sensor_data(self, sensor_data):
         _smell, _temperature, _pressure, _humidity = self.smell(sensor_data)
@@ -148,46 +205,14 @@ class SmellyCat:
 
         self.sensor_data_df = pd.concat([self.sensor_data_df, sample_df], ignore_index=True)
 
-        if len(self.sensor_data_df) >= 3:
-            rgb_dict, var_ratio = self.feature_space_to_RGB(self.sensor_data_df.tail(3))
+        if len(self.sensor_data_df) % 3 == 0:
+            rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(3), plot=False)
 
-        if len(self.sensor_data_df) > 100:
-            scaler = StandardScaler()
-            normalized_data = scaler.fit_transform(self.sensor_data_df[['temperature',
-                                                                        'pressure',
-                                                                        'humidity',
-                                                                        'gas_resistance0',
-                                                                        'gas_resistance1',
-                                                                        'gas_resistance2',
-                                                                        'gas_resistance3',
-                                                                        'gas_resistance4',
-                                                                        'gas_resistance5',
-                                                                        'gas_resistance6',
-                                                                        'gas_resistance7'
-                                                                        ]])
+            response = requests.post('http://localhost:5000/update',
+                                     data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, list(reduced_features[0]), _temperature, _pressure, _humidity]}),
+                                     headers={'Content-Type': 'application/json'})
 
-            self.reducer(normalized_data)
-
-            self.sensor_data_df = pd.DataFrame(columns=[
-                'timestamp',
-                'temperature',
-                'pressure',
-                'humidity',
-                'gas_resistance0',
-                'gas_resistance1',
-                'gas_resistance2',
-                'gas_resistance3',
-                'gas_resistance4',
-                'gas_resistance5',
-                'gas_resistance6',
-                'gas_resistance7',
-            ])
-
-        response = requests.post('http://localhost:5000/update',
-                                 data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, _temperature, _pressure, _humidity]}),
-                                 headers={'Content-Type': 'application/json'})
-        # print(response.json())
-        print(_smell)
+            print(response.status_code, _smell, rgb, list(reduced_features[0]))
 
     def connect_mqtt(self):
         def on_connect(self, userdata, flags, rc):

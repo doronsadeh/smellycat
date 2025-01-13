@@ -17,7 +17,7 @@ def index():
 def update_data():
     try:
         data = request.json.get('datapoint', [])
-        if len(data) != 4:
+        if len(data) != 5:
             return jsonify({'error': 'Invalid data format. Expecting 4 values.'}), 400
 
         # Emit data to all connected clients via WebSocket

@@ -1,5 +1,8 @@
+import json
 import random
 
+import numpy as np
+import requests
 # import requests
 from paho.mqtt import client as mqtt_client
 
@@ -9,7 +12,7 @@ class SmellyCat:
     # HEADERS = {"Content-Type": "application/json"}
 
     # Process only 1 in N messages to avoid piling up messages
-    RPOCESS_EVERY_1_IN_N_MESSAGES = 3
+    RPOCESS_EVERY_1_IN_N_MESSAGES = 1
 
     msg_count = 0
 
@@ -21,10 +24,34 @@ class SmellyCat:
         self.username = username
         self.password = password
 
+    class SensorData:
+        def __init__(self, sensor_id, sensor_values):
+            self.sensor_id = sensor_id
+            self.timestamp = sensor_values[0]
+            self.temperature = sensor_values[1]
+            self.pressure = sensor_values[2] * 100.0
+            self.humidity = sensor_values[3]
+            self.gas_resistance = sensor_values[4]
+
+    def smell(self, sensor_data: str):
+        sensors = []
+        for _sdata in eval(sensor_data)['datapoints']:
+            sensors.append(self.SensorData(_sdata[0], _sdata[1:]))
+
+        _smell = np.mean([s.gas_resistance for s in sensors])
+        _pressure = np.mean([s.pressure for s in sensors])
+        _humidity = np.mean([s.humidity for s in sensors])
+        _temprature = np.mean([s.temperature for s in sensors])
+
+        return _smell, _temprature, _pressure, _humidity
+
     def process_sensor_data(self, sensor_data):
-        # response = requests.post(REST_URL, data=sensor_data, headers=HEADERS)
+        _smell, _temperature, _pressure, _humidity = self.smell(sensor_data)
+        response = requests.post('http://localhost:5000/update',
+                                 data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, _temperature, _pressure, _humidity]}),
+                                 headers={'Content-Type': 'application/json'})
         # print(response.json())
-        pass
+        print(_smell)
 
     def connect_mqtt(self):
         def on_connect(self, userdata, flags, rc):
@@ -44,7 +71,7 @@ class SmellyCat:
             self.msg_count += 1
             if self.msg_count % self.RPOCESS_EVERY_1_IN_N_MESSAGES == 0:
                 self.process_sensor_data(msg.payload.decode())
-                print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+                # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
 
         client.subscribe(topic)
         client.on_message = on_message

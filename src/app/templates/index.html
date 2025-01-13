@@ -122,13 +122,19 @@
     }
 
     // Function to update the chart with new data and a segment color
-    function updateChart(chart, data, color) {
+    function updateChart(chart, data, color, borderColor, backgroundColor) {
         const timestamp = new Date().toLocaleTimeString();
 
         // Push the new data and color
         chart.data.labels.push(timestamp);
         chart.data.datasets[0].data.push(data);
+        if (!color)
+            color = borderColor;
         chart.data.datasets[0].segcol.push(color);
+
+        // Update chart colors
+        chart.data.datasets[0].borderColor = borderColor;
+        chart.data.datasets[0].backgroundColor = backgroundColor;
 
         // Keep only the last 25 points
         if (chart.data.labels.length > 25) {
@@ -146,10 +152,10 @@
     // Listen for `update_chart` events
     socket.on('update_chart', (msg) => {
         if (msg.data) {
-            updateChart(chart1, msg.data[0], oklabToRGB(msg.data[1][0], msg.data[1][1], msg.data[1][2]));
-            updateChart(chart2, msg.data[2], null);
-            updateChart(chart3, msg.data[3], null);
-            updateChart(chart4, msg.data[4], null);
+            updateChart(chart1, msg.data[0], oklabToRGB(msg.data[1][0], msg.data[1][1], msg.data[1][2]), 'red', 'red');
+            updateChart(chart2, msg.data[2], null, 'blue', 'blue');
+            updateChart(chart3, msg.data[3], null, 'green', 'green');
+            updateChart(chart4, msg.data[4], null, 'purple', 'purple');
         }
     });
 </script>

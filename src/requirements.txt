@@ -4,3 +4,6 @@ paho-mqtt==1.6.1
 numpy
 flask-cors
 flask-socketio
+pandas
+scikit-learn
+matplotlib

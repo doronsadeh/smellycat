@@ -84,7 +84,7 @@ class SmellyCat:
 
         return (int(R), int(G), int(B))
 
-    def features_to_oklab_color(self, feature_vectors):
+    def features_to_oklab_color(self, feature_vectors,smell):
         """
         Convert 8D feature vectors into Oklab-based RGB colors.
 
@@ -114,8 +114,8 @@ class SmellyCat:
         rgb_colors = [self.oklab_to_srgb(L, a, b) for L, a, b in reduced_features]
         return rgb_colors, reduced_features
 
-    def reducer(self, arr, plot=False):
-        rgb, reduced_features = self.features_to_oklab_color(arr)
+    def reducer(self, arr, smell, plot=False):
+        rgb, reduced_features = self.features_to_oklab_color(arr, smell)
 
         if plot:
             self.plot_df = pd.concat([self.plot_df, pd.DataFrame(reduced_features, columns=['R', 'G', 'B'])], axis=0)
@@ -171,7 +171,7 @@ class SmellyCat:
 
         return _smell, _temperature, _pressure, _humidity
 
-    def feature_space_to_RGB(self, df, plot=False):
+    def feature_space_to_RGB(self, df, smell, plot=False):
         rgb, reduced_features = self.reducer(df[['gas_resistance0',
                                                  'gas_resistance1',
                                                  'gas_resistance2',
@@ -179,7 +179,9 @@ class SmellyCat:
                                                  'gas_resistance4',
                                                  'gas_resistance5',
                                                  'gas_resistance6',
-                                                 'gas_resistance7']], plot=plot)
+                                                 'gas_resistance7']],
+                                             smell=smell,
+                                             plot=plot)
 
         return rgb, reduced_features
 
@@ -206,7 +208,7 @@ class SmellyCat:
         self.sensor_data_df = pd.concat([self.sensor_data_df, sample_df], ignore_index=True)
 
         if len(self.sensor_data_df) % 3 == 0:
-            rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(3), plot=False)
+            rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(3), _smell, plot=False)
 
             response = requests.post('http://localhost:5000/update',
                                      data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, list(reduced_features[0]), _temperature, _pressure, _humidity]}),

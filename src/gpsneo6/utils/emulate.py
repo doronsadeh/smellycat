@@ -5,7 +5,7 @@ import time
 GPIO.setmode(GPIO.BCM)  # Use BCM numbering
 TX_PIN = 17  # GPIO pin to send data (use any available pin)
 
-_50ms = 50.0 / 1000.0
+_50ms = 0.001
 
 GPIO.setup(TX_PIN, GPIO.OUT)
 
@@ -42,6 +42,7 @@ try:
     while True:
         for sentence in gps_data:
             send_gps_data(TX_PIN, sentence)
+            print(sentence)
             time.sleep(1)  # Delay between sentences
 finally:
     print('GPS sent')

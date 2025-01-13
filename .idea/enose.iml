@@ -3,8 +3,12 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.localenv" />
+      <excludeFolder url="file://$MODULE_DIR$/src/embedded" />
+      <excludeFolder url="file://$MODULE_DIR$/src/embedded/bme688/deployment" />
+      <excludeFolder url="file://$MODULE_DIR$/src/scripts" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote unknown interpreter (sftp://pi@10.0.0.7:22/home/pi/.virtualenvs/gps/bin/python)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 (enose)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

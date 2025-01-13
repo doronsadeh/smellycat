@@ -108,7 +108,7 @@ class SmellyCat:
         reduced_features[:, 0] = oklab_scaler.fit_transform(reduced_features[:, [0]].reshape(-1, 1)).flatten()
         reduced_features[:, 1:] = reduced_features[:, 1:]  # Centered around 0 naturally by PCA
 
-        reduced_features = np.median(reduced_features, axis=0).reshape(1, -1)
+        reduced_features = np.percentile(reduced_features, 90, axis=0).reshape(1, -1)
 
         # Step 4: Convert Oklab to sRGB
         rgb_colors = [self.oklab_to_srgb(L, a, b) for L, a, b in reduced_features]

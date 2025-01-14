@@ -251,11 +251,13 @@ class SmellyCat:
 
             self.step += 1
 
-            response = requests.post('http://localhost:5000/update',
-                                     data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, list(reduced_features[0]), _temperature, _pressure, _humidity]}),
-                                     headers={'Content-Type': 'application/json'})
-
-            print(response.status_code, _smell, rgb, list(reduced_features[0]))
+            try:
+                response = requests.post('http://localhost:5000/update',
+                                         data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, list(reduced_features[0]), _temperature, _pressure, _humidity]}),
+                                         headers={'Content-Type': 'application/json'})
+                print(response.status_code, _smell, rgb, list(reduced_features[0]))
+            except:
+                pass
 
     def connect_mqtt(self):
         def on_connect(self, userdata, flags, rc):

@@ -25,7 +25,7 @@ def generate_random_hike(start_lat, start_lon, total_distance_km=1, step_distanc
 
     while total_distance_m > 0:
         # Generate a random direction (bearing in degrees)
-        bearing = random.uniform(0, 360)
+        bearing = random.uniform(0, 270)
 
         # Compute the next point
         next_point = geopy.distance.distance(meters=step_distance_m).destination(current_point, bearing)

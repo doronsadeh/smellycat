@@ -4,7 +4,7 @@ import h3
 import numpy as np
 from PIL import Image
 from selenium import webdriver
-from matplotlib import cm
+from matplotlib import cm, pyplot as plt
 from matplotlib.colors import Normalize
 
 
@@ -124,11 +124,12 @@ class GeoColoring:
         y = int((max_lat - lat) / (max_lat - min_lat) * height)  # Invert Y-axis
         return x, y
 
-    def capture_and_crop_bounding_box(self, geomap, html_file, bounding_box, output_image="cropped_map.jpg", img_size=(640, 480)):
+    def capture_and_crop_bounding_box(self, geomap, html_file, bounding_box, output_image="cropped_map.jpg", img_size=(1024, 768)):
         """
         Capture the Folium map and crop it to the polygon bounding box.
 
         Parameters:
+            geomap (folium.Map): Folium map object.
             html_file (str): Path to the HTML file of the map.
             bounding_box (dict): Bounding box with min/max lat/lon.
             output_image (str): Path to save the cropped image.
@@ -159,14 +160,7 @@ class GeoColoring:
         print(f"Cropped image saved at '{output_image}'")
 
         # Load the uploaded image
-        image = cv2.imread(output_image)
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert to RGB for visualization
-
-        # Display the original image
-        # plt.imshow(image_rgb)
-        # plt.title("Original Image")
-        # plt.axis("off")
-        # plt.show()
+        image = cv2.imread(output_image, cv2.IMREAD_UNCHANGED)
 
         # Convert the image to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -177,90 +171,62 @@ class GeoColoring:
         # Find contours of the polygons
         contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Draw detected contours
-        contour_image = image_rgb.copy()
-        cv2.drawContours(contour_image, contours, -1, (255, 0, 0), 2)
+        # Get the center of the image
+        image_center = (image.shape[1] // 2, image.shape[0] // 2)  # (x, y)
 
-        # Display the contours
-        # plt.imshow(contour_image)
-        # plt.title("Contours Detected")
-        # plt.axis("off")
-        # plt.show()
+        # Find the contour closest to the center
+        min_distance = float('inf')
+        closest_contour = None
 
-        # Calculate the areas of the polygons
-        polygon_areas = [cv2.contourArea(cnt) for cnt in contours]
+        for contour in contours:
+            # Calculate the centroid of the contour
+            M = cv2.moments(contour)
+            if M['m00'] != 0:  # Avoid division by zero
+                cx = int(M['m10'] / M['m00'])
+                cy = int(M['m01'] / M['m00'])
+            else:
+                continue  # Skip contours with no area
 
-        # Normalize the colormap range to identify the polygons of the 'coolwarm' colormap range
-        cmap = cm.get_cmap('coolwarm')
-        norm = Normalize(vmin=0, vmax=255)
+            # Calculate the distance from the center of the image
+            distance = np.sqrt((cx - image_center[0]) ** 2 + (cy - image_center[1]) ** 2)
 
-        # Create a mask for polygons within the coolwarm range
-        coolwarm_mask = np.zeros_like(gray, dtype=np.uint8)
+            # Check if this is the closest contour so far
+            if distance < min_distance:
+                min_distance = distance
+                closest_contour = contour
 
-        # Iterate over contours and filter polygons within the colormap's range
-        for cnt in contours:
-            # Create a temporary mask for the current contour
-            mask_temp = np.zeros_like(gray, dtype=np.uint8)
-            cv2.drawContours(mask_temp, [cnt], -1, 255, thickness=cv2.FILLED)
+        # Get the bounding rectangle of the closest contour
+        x, y, w, h = cv2.boundingRect(closest_contour)
 
-            # Calculate the average color within the contour
-            mean_color = cv2.mean(image_rgb, mask=mask_temp)[:3]  # Only RGB channels
+        # Crop the region within the contour
+        cropped_image = image[y:y + h, x:x + w]
 
-            # Normalize the color values to [0, 1] for comparison with the colormap
-            normalized_color = tuple(val / 255 for val in mean_color)
-            colormap_color = cmap(norm(np.mean(normalized_color)))
+        # Add alpha channel
+        if cropped_image.shape[2] != 4:
+            b, g, r = cv2.split(image)
+            alpha = np.ones_like(b) * 255  # Fully opaque alpha channel
+            cropped_image = cv2.merge((b, g, r, alpha))
 
-            # Check if the alpha channel of the colormap output is non-zero
-            if colormap_color[-1] > 0:  # Alpha > 0 means it falls in the colormap range
-                cv2.drawContours(coolwarm_mask, [cnt], -1, 255, thickness=cv2.FILLED)
+        # Define white color threshold
+        threshold = 200  # Adjust as needed
 
-        # Apply the new mask to isolate polygons in the coolwarm range
-        masked_image = cv2.bitwise_and(image_rgb, image_rgb, mask=coolwarm_mask)
-
-        # Find the bounding box for these polygons
-        x_cw, y_cw, w_cw, h_cw = cv2.boundingRect(np.vstack(contours))
-
-        # Crop the area containing the filtered polygons
-        cropped_coolwarm_polygons_image = masked_image[y_cw:y_cw + h_cw, x_cw:x_cw + w_cw]
-
-        # Save the cropped image
-        cropped_coolwarm_polygons_image_path = "cropped_transparent_polygons_image.png"
-        Image.fromarray(cropped_coolwarm_polygons_image).save(cropped_coolwarm_polygons_image_path)
-
-        # Display the cropped image
-        # plt.imshow(cropped_coolwarm_polygons_image)
-        # plt.title("Cropped Coolwarm Polygons")
-        # plt.axis("off")
-        # plt.show()
-
-        # Convert the masked image to RGBA format
-        masked_image_rgba = cv2.cvtColor(masked_image, cv2.COLOR_RGB2RGBA)
-
-        # Set the non-polygon area (black pixels in the mask) to transparent
-        masked_image_rgba[gray == 0, 3] = 0  # Set alpha channel to 0 for non-polygon areas
-
-        # Crop the area containing the polygons
-        cropped_transparent_polygons_image = masked_image_rgba[y_cw:y_cw + h_cw, x_cw:x_cw + w_cw]
-
-        # Save the cropped image with transparency
-        cropped_transparent_polygons_image_path = "cropped_transparent_polygons_image.png"
-        Image.fromarray(cropped_transparent_polygons_image).save(cropped_transparent_polygons_image_path)
-
-        # Display the cropped image with transparency
-        # plt.imshow(cropped_transparent_polygons_image)
-        # plt.title("Cropped Polygons with Transparency")
-        # plt.axis("off")
-        # plt.show()
+        # Iterate through the image and set white pixels to transparent
+        for y in range(cropped_image.shape[0]):
+            for x in range(cropped_image.shape[1]):
+                b, g, r, a = cropped_image[y, x]
+                if b > threshold and g > threshold and r > threshold:
+                    # Set alpha to 0 for transparency
+                    cropped_image[y, x] = (b, g, r, 0)
 
         # Apply a median blur to the RGBA image (only on RGB channels, not transparency)
-        blurred_image = cropped_transparent_polygons_image.copy()
-        blurred_image[:, :, :3] = cv2.medianBlur(cropped_transparent_polygons_image[:, :, :3], ksize=17)
+        blurred_image = cropped_image.copy()
+        blurred_image[:, :, :3] = cv2.medianBlur(cropped_image[:, :, :3], ksize=17)
 
         # Save the blurred image
-        blurred_image_path = "blurred_transparent_polygons_image.png"
+        blurred_image_path = "cropped_transparent_polygons_image.png"
         Image.fromarray(blurred_image).save(blurred_image_path)
 
-        # Display the blurred image
+        # # Display the blurred image
         # plt.imshow(blurred_image)
         # plt.title("Blurred Polygons with Transparency")
         # plt.axis("off")
@@ -283,7 +249,7 @@ class GeoColoring:
         # plt.title("Cropped to Transparent Bounding Box")
         # plt.axis("off")
         # plt.show()
-        #
+
         # Add the blurred image back to the map using ImageOverlay
         # folium.raster_layers.ImageOverlay(
         #     name="Blurred Polygons",

@@ -7,7 +7,6 @@ from selenium import webdriver
 from matplotlib import cm, pyplot as plt
 from matplotlib.colors import Normalize
 
-
 """
 Resolution  Average Hexagon Edge Length (m)	Average Hexagon Area (km²)	Average Hexagon Area (m²)
     0	                    1107.7	                4,250	                    4,250,000
@@ -139,6 +138,9 @@ class GeoColoring:
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
         options.add_argument(f"--window-size={img_size[0]},{img_size[1]}")
+        options.add_argument("--disable-color-correct-rendering")
+        options.add_argument("--disable-gpu")
+
         driver = webdriver.Chrome(options=options)
 
         # Load the map HTML file
@@ -156,11 +158,18 @@ class GeoColoring:
         # Crop the screenshot to the bounding box
         with Image.open(screenshot_path) as img:
             cropped_img = img.crop((left, upper, right, lower))
-            cropped_img.save(output_image, "JPEG")
+            cropped_img.save(output_image, "PNG")
         print(f"Cropped image saved at '{output_image}'")
 
         # Load the uploaded image
-        image = cv2.imread(output_image, cv2.IMREAD_UNCHANGED)
+        image = cv2.imread(output_image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # Add alpha channel
+        if image.shape[2] != 4:
+            r, g, b = cv2.split(image)
+            alpha = np.ones_like(b) * 255  # Fully opaque alpha channel
+            image = cv2.merge((r, g, b, alpha))
 
         # Convert the image to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -201,22 +210,16 @@ class GeoColoring:
         # Crop the region within the contour
         cropped_image = image[y:y + h, x:x + w]
 
-        # Add alpha channel
-        if cropped_image.shape[2] != 4:
-            b, g, r = cv2.split(image)
-            alpha = np.ones_like(b) * 255  # Fully opaque alpha channel
-            cropped_image = cv2.merge((b, g, r, alpha))
-
         # Define white color threshold
         threshold = 200  # Adjust as needed
 
         # Iterate through the image and set white pixels to transparent
         for y in range(cropped_image.shape[0]):
             for x in range(cropped_image.shape[1]):
-                b, g, r, a = cropped_image[y, x]
+                r, g, b, a = cropped_image[y, x]
                 if b > threshold and g > threshold and r > threshold:
                     # Set alpha to 0 for transparency
-                    cropped_image[y, x] = (b, g, r, 0)
+                    cropped_image[y, x] = (r, g, b, 0)
 
         # Apply a median blur to the RGBA image (only on RGB channels, not transparency)
         blurred_image = cropped_image.copy()
@@ -240,9 +243,23 @@ class GeoColoring:
         # Crop the image to the transparent bounding box
         cropped_to_transparent_bbox = blurred_image[y:y + h, x:x + w]
 
+        # Define the border sizes
+        top, bottom, left, right = 150, 150, 150, 150
+
+        # Create the transparent border
+        expanded_image = cv2.copyMakeBorder(
+            cropped_to_transparent_bbox,
+            top,
+            bottom,
+            left,
+            right,
+            cv2.BORDER_CONSTANT,
+            value=(0, 0, 0, 0)  # Transparent border in BGRA
+        )
+
         # Save and display the cropped image
-        cropped_to_transparent_bbox_path = "blurred_transparent_polygons_image.png"
-        Image.fromarray(cropped_to_transparent_bbox).save(cropped_to_transparent_bbox_path)
+        expanded_image_path = "blurred_transparent_polygons_image.png"
+        Image.fromarray(expanded_image).save(expanded_image_path)
 
         # Display the cropped image
         # plt.imshow(cropped_to_transparent_bbox)
@@ -250,14 +267,15 @@ class GeoColoring:
         # plt.axis("off")
         # plt.show()
 
+
         # Add the blurred image back to the map using ImageOverlay
-        # folium.raster_layers.ImageOverlay(
-        #     name="Blurred Polygons",
-        #     image="blurred_transparent_polygons_image.png",
-        #     bounds=[[bounding_box['min_lat'], bounding_box['min_lon']],
-        #             [bounding_box['max_lat'], bounding_box['max_lon']]],  # Lat/Lon bounds
-        #     opacity=1.0
-        # ).add_to(geomap)
+        folium.raster_layers.ImageOverlay(
+            name="Blurred Polygons",
+            image="blurred_transparent_polygons_image.png",
+            bounds=[[bounding_box['min_lat'], bounding_box['min_lon']],
+                    [bounding_box['max_lat'], bounding_box['max_lon']]],  # Lat/Lon bounds
+            opacity=1.0
+        ).add_to(geomap)
 
         # Add layer control to toggle the overlay
         # folium.LayerControl().add_to(geomap)

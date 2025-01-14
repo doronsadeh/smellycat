@@ -73,7 +73,7 @@ class GeoColoring:
             color=None,  # No border
             fill=True,
             fill_color=color,
-            fill_opacity=0.75  # Semi-transparent fill
+            fill_opacity=0.35  # Semi-transparent fill
         ).add_to(geomap)
 
         return geomap

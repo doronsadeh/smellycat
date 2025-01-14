@@ -51,13 +51,13 @@ if __name__ == "__main__":
     # Example: Generate a 1 km hike starting in Israel (Tel Aviv area)
     start_latitude = 32.0853  # Tel Aviv latitude
     start_longitude = 34.7818  # Tel Aviv longitude
-    hike_coordinates = generate_random_hike(start_latitude, start_longitude, total_distance_km=5, step_distance_m=1)
+    hike_coordinates = generate_random_hike(start_latitude, start_longitude, total_distance_km=15, step_distance_m=5)
 
     gcol = GeoColoring()
 
     geomap = None
     for c in hike_coordinates:
-        geomap = gcol.create_colored_hexagon_map(geomap, c[1], c[0], resolution=15, color=generate_gradient_color(random.random()))
+        geomap = gcol.create_colored_hexagon_map(geomap, c[1], c[0], resolution=13, color=generate_gradient_color(random.random()))
 
     # Save the map to an HTML file
     geomap.save("geomap.html")

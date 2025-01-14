@@ -7,14 +7,15 @@ import numpy as np
 import pandas as pd
 import requests
 from paho.mqtt import client as mqtt_client
+from scipy.stats import zscore
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
 
 
 class SmellyCat:
     # Process only 1 in N messages to avoid piling up messages
-    RPOCESS_EVERY_1_IN_N_MESSAGES = 1
+    PROCESS_EVERY_1_IN_N_MESSAGES = 1
+    NUM_SAMPLES_TO_PROCESS = 16
 
     msg_count = 0
 
@@ -40,6 +41,8 @@ class SmellyCat:
             'gas_resistance7',
         ])
 
+        self.previous_seg_color = []
+
         # Convert PCA results to a DataFrame for easier handling
         self.plot_df = pd.DataFrame(columns=['R', 'G', 'B'])
 
@@ -51,8 +54,6 @@ class SmellyCat:
             self.pressure = sensor_values[2] * 100.0
             self.humidity = sensor_values[3]
             self.gas_resistance = sensor_values[4]
-
-    import numpy as np
 
     def oklab_to_srgb(self, L, a, b):
         """Convert Oklab values to sRGB values."""
@@ -84,7 +85,7 @@ class SmellyCat:
 
         return (int(R), int(G), int(B))
 
-    def features_to_oklab_color(self, feature_vectors,smell):
+    def features_to_oklab_color(self, feature_vectors, smell):
         """
         Convert 8D feature vectors into Oklab-based RGB colors.
 
@@ -108,7 +109,23 @@ class SmellyCat:
         reduced_features[:, 0] = oklab_scaler.fit_transform(reduced_features[:, [0]].reshape(-1, 1)).flatten()
         reduced_features[:, 1:] = reduced_features[:, 1:]  # Centered around 0 naturally by PCA
 
-        reduced_features = np.percentile(reduced_features, 90, axis=0).reshape(1, -1)
+        # Calculate Z-scores
+        df_rf = pd.DataFrame(reduced_features, columns=['L', 'a', 'b'])
+        z_scores = np.abs(zscore(df_rf))
+
+        # Define a threshold (e.g., Z-score > 3)
+        threshold = np.percentile(z_scores, 99)
+        outliers = (z_scores > threshold).any(axis=1)
+
+        # Remove outliers
+        df_cleaned = df_rf[~outliers]
+
+        reduced_features = np.max(df_cleaned.to_numpy(), axis=0).reshape(1, -1)
+
+        self.previous_seg_color.append(reduced_features)
+        if len(self.previous_seg_color) > 3:
+            self.previous_seg_color.pop(0)
+            reduced_features = np.mean(self.previous_seg_color, axis=0).reshape(1, -1)
 
         # Step 4: Convert Oklab to sRGB
         rgb_colors = [self.oklab_to_srgb(L, a, b) for L, a, b in reduced_features]
@@ -178,8 +195,7 @@ class SmellyCat:
                                                  'gas_resistance3',
                                                  'gas_resistance4',
                                                  'gas_resistance5',
-                                                 'gas_resistance6',
-                                                 'gas_resistance7']],
+                                                 'gas_resistance6']],
                                              smell=smell,
                                              plot=plot)
 
@@ -207,8 +223,8 @@ class SmellyCat:
 
         self.sensor_data_df = pd.concat([self.sensor_data_df, sample_df], ignore_index=True)
 
-        if len(self.sensor_data_df) % 3 == 0:
-            rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(3), _smell, plot=False)
+        if len(self.sensor_data_df) >= max(3, self.NUM_SAMPLES_TO_PROCESS):
+            rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(max(3, self.NUM_SAMPLES_TO_PROCESS)), _smell, plot=False)
 
             response = requests.post('http://localhost:5000/update',
                                      data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, list(reduced_features[0]), _temperature, _pressure, _humidity]}),
@@ -232,7 +248,7 @@ class SmellyCat:
     def subscribe(self, client, topic):
         def on_message(client, userdata, msg):
             self.msg_count += 1
-            if self.msg_count % self.RPOCESS_EVERY_1_IN_N_MESSAGES == 0:
+            if self.msg_count % self.PROCESS_EVERY_1_IN_N_MESSAGES == 0:
                 self.process_sensor_data(msg.payload.decode())
                 # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
 

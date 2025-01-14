@@ -49,8 +49,8 @@ if __name__ == "__main__":
 
 
     # Example: Generate a 1 km hike starting in Israel (Tel Aviv area)
-    start_latitude = 32.0853  # Tel Aviv latitude
-    start_longitude = 34.7818  # Tel Aviv longitude
+    start_latitude = 32.461692
+    start_longitude = 34.962014
     hike_coordinates = generate_random_hike(start_latitude, start_longitude, total_distance_km=15, step_distance_m=5)
 
     gcol = GeoColoring()

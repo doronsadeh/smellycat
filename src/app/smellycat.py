@@ -11,6 +11,9 @@ from scipy.stats import zscore
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 
+from app.geo_coloring import GeoColoring
+from misc.random_hike import generate_random_hike
+
 
 class SmellyCat:
     # Process only 1 in N messages to avoid piling up messages
@@ -45,6 +48,13 @@ class SmellyCat:
 
         # Convert PCA results to a DataFrame for easier handling
         self.plot_df = pd.DataFrame(columns=['R', 'G', 'B'])
+
+        start_latitude = 32.461692
+        start_longitude = 34.962014
+        self.hike_coordinates = generate_random_hike(start_latitude, start_longitude, total_distance_km=15, step_distance_m=5)
+        self.step = 0
+        self.gcol = GeoColoring()
+        self.geomap = None
 
     class SensorData:
         def __init__(self, sensor_id, sensor_values):
@@ -195,7 +205,8 @@ class SmellyCat:
                                                  'gas_resistance3',
                                                  'gas_resistance4',
                                                  'gas_resistance5',
-                                                 'gas_resistance6']],
+                                                 'gas_resistance6',
+                                                 'gas_resistance7']],
                                              smell=smell,
                                              plot=plot)
 
@@ -225,6 +236,12 @@ class SmellyCat:
 
         if len(self.sensor_data_df) >= max(3, self.NUM_SAMPLES_TO_PROCESS):
             rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(max(3, self.NUM_SAMPLES_TO_PROCESS)), _smell, plot=False)
+
+            c = self.hike_coordinates[self.step]
+            r, g, b = rgb[0]
+            self.geomap = self.gcol.create_colored_hexagon_map(self.geomap, c[1], c[0], resolution=13, color=f"rgba({r}, {g}, {b}, {0.8})")
+            self.geomap.save("geomap.html")
+            self.step += 1
 
             response = requests.post('http://localhost:5000/update',
                                      data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, list(reduced_features[0]), _temperature, _pressure, _humidity]}),

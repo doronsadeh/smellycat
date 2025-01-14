@@ -65,7 +65,7 @@ class GeoColoring:
 
         # Create a Folium map centered on the given coordinates
         if geomap is None:
-            geomap = folium.Map(location=[lon, lat], zoom_start=14)
+            geomap = folium.Map(location=[lon, lat], zoom_start=18)
 
         # Add the hexagon as a polygon to the map
         folium.Polygon(

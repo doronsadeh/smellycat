@@ -1,6 +1,8 @@
 import json
+import os
 import random
 from datetime import datetime
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -239,8 +241,14 @@ class SmellyCat:
 
             c = self.hike_coordinates[self.step]
             r, g, b = rgb[0]
-            self.geomap = self.gcol.create_colored_hexagon_map(self.geomap, c[1], c[0], resolution=13, color=f"rgba({r}, {g}, {b}, {0.8})")
+            self.geomap, bounding_box = self.gcol.create_colored_hexagon_map(self.geomap, c[1], c[0], resolution=13, color=f"rgba({r}, {g}, {b}, {0.8})")
             self.geomap.save("geomap.html")
+            self.geomap = self.gcol.capture_and_crop_bounding_box(geomap=self.geomap,
+                                                                  html_file=os.path.join(Path(__file__).parent, 'geomap.html'),
+                                                                  bounding_box=bounding_box,
+                                                                  output_image='smellycat_hike.png')
+            self.geomap.save("geomap.html")
+
             self.step += 1
 
             response = requests.post('http://localhost:5000/update',

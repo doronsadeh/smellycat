@@ -11,3 +11,6 @@ folium
 h3
 geopy
 matplotlib
+pillow
+selenium
+opencv-python

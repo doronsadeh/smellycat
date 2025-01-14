@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     geomap = None
     for c in hike_coordinates:
-        geomap = gcol.create_colored_hexagon_map(geomap, c[1], c[0], resolution=13, color=generate_gradient_color(random.random()))
+        geomap, _ = gcol.create_colored_hexagon_map(geomap, c[1], c[0], resolution=13, color=generate_gradient_color(random.random()))
 
     # Save the map to an HTML file
     geomap.save("geomap.html")

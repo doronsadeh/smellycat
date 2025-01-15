@@ -206,6 +206,13 @@ class GeoColoring:
         # Get the bounding rectangle of the closest contour
         x, y, w, h = cv2.boundingRect(closest_contour)
 
+        boundary = 100
+
+        x = max(x - boundary, 0)
+        y = max(y - boundary, 0)
+        w = min(w + boundary * 2, image.shape[1])
+        h = min(h + boundary * 2, image.shape[0])
+
         # Crop the region within the contour
         cropped_image = image[y:y + h, x:x + w]
 
@@ -228,19 +235,8 @@ class GeoColoring:
         blurred_image_path = "cropped_transparent_polygons_image.png"
         Image.fromarray(blurred_image).save(blurred_image_path)
 
-        # # Display the blurred image
-        # plt.imshow(blurred_image)
-        # plt.title("Blurred Polygons with Transparency")
-        # plt.axis("off")
-        # plt.show()
-
-        # Calculate the bounding box for non-transparent areas in the RGBA image
-        alpha_channel = blurred_image[:, :, 3]  # Extract the alpha channel
-        coords = cv2.findNonZero(alpha_channel)  # Find non-zero alpha pixels
-        x, y, w, h = cv2.boundingRect(coords)  # Calculate the bounding box
-
-        # Crop the image to the transparent bounding box
-        cropped_to_transparent_bbox = blurred_image[y:y + h, x:x + w]
+        width, height = blurred_image.shape[:2]
+        cropped_to_transparent_bbox = blurred_image[boundary:height, boundary:width]
 
         # Save and display the cropped image
         expanded_image_path = "blurred_transparent_polygons_image.png"

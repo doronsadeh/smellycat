@@ -236,7 +236,7 @@ class GeoColoring:
         Image.fromarray(blurred_image).save(blurred_image_path)
 
         width, height = blurred_image.shape[:2]
-        cropped_to_transparent_bbox = blurred_image[boundary:height, boundary:width]
+        cropped_to_transparent_bbox = blurred_image[boundary:height - boundary, boundary:width - boundary]
 
         # Save and display the cropped image
         expanded_image_path = "blurred_transparent_polygons_image.png"

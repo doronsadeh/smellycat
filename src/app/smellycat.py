@@ -292,12 +292,12 @@ if __name__ == "__main__":
     ###########################################################
     # MQTT Broker info
     ###########################################################
-    broker = '10.0.0.6'
+    broker = '54.166.148.213'
     port = 1883
     topic = "sensorData"
     client_id = f'eNose-{random.randint(0, 100)}'
-    username = 'admin'
-    password = 'admin'
+    username = 'ubuntu'
+    password = '2B-ornot-2B'
 
     r = SmellyCat(broker, port, topic, client_id, username, password)
     r.run()

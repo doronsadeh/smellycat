@@ -96,7 +96,7 @@ class GeoColoring:
             color=None,  # No border
             fill=True,
             fill_color=color,
-            fill_opacity=0.35  # Semi-transparent fill
+            fill_opacity=1.0
         )
 
         _polyhex.add_to(geomap)

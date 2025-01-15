@@ -4,8 +4,6 @@ import h3
 import numpy as np
 from PIL import Image
 from selenium import webdriver
-from matplotlib import cm, pyplot as plt
-from matplotlib.colors import Normalize
 
 """
 Resolution  Average Hexagon Edge Length (m)	Average Hexagon Area (km²)	Average Hexagon Area (m²)
@@ -30,7 +28,16 @@ Resolution  Average Hexagon Edge Length (m)	Average Hexagon Area (km²)	Average 
 
 
 class GeoColoring:
-    def __init__(self):
+    def __init__(self, img_size=(1024, 768)):
+        # Initialize a Selenium WebDriver
+        options = webdriver.ChromeOptions()
+        # options.add_argument("--headless")
+        options.add_argument(f"--window-size={img_size[0]},{img_size[1]}")
+        options.add_argument("--disable-color-correct-rendering")
+        options.add_argument("--disable-gpu")
+
+        self.driver = webdriver.Chrome(options=options)
+
         self.hexagons = {}
 
     def get_hexagon_coordinates(self, lat, lon, resolution=15):
@@ -134,22 +141,14 @@ class GeoColoring:
             output_image (str): Path to save the cropped image.
             img_size (tuple): Size of the browser window (width, height) in pixels.
         """
-        # Initialize a Selenium WebDriver
-        options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument(f"--window-size={img_size[0]},{img_size[1]}")
-        options.add_argument("--disable-color-correct-rendering")
-        options.add_argument("--disable-gpu")
-
-        driver = webdriver.Chrome(options=options)
 
         # Load the map HTML file
-        driver.get(f"file://{html_file}")
+        self.driver.get(f"file://{html_file}")
 
         # Take a screenshot
         screenshot_path = "screenshot.png"
-        driver.save_screenshot(screenshot_path)
-        driver.quit()
+        self.driver.save_screenshot(screenshot_path)
+        # self.driver.quit()
 
         # Convert bounding box to pixel coordinates
         left, upper = self.latlon_to_pixels(bounding_box["max_lat"], bounding_box["min_lon"], bounding_box, img_size)
@@ -243,30 +242,9 @@ class GeoColoring:
         # Crop the image to the transparent bounding box
         cropped_to_transparent_bbox = blurred_image[y:y + h, x:x + w]
 
-        # Define the border sizes
-        top, bottom, left, right = 150, 150, 150, 150
-
-        # Create the transparent border
-        expanded_image = cv2.copyMakeBorder(
-            cropped_to_transparent_bbox,
-            top,
-            bottom,
-            left,
-            right,
-            cv2.BORDER_CONSTANT,
-            value=(0, 0, 0, 0)  # Transparent border in BGRA
-        )
-
         # Save and display the cropped image
         expanded_image_path = "blurred_transparent_polygons_image.png"
-        Image.fromarray(expanded_image).save(expanded_image_path)
-
-        # Display the cropped image
-        # plt.imshow(cropped_to_transparent_bbox)
-        # plt.title("Cropped to Transparent Bounding Box")
-        # plt.axis("off")
-        # plt.show()
-
+        Image.fromarray(cropped_to_transparent_bbox).save(expanded_image_path)
 
         # Add the blurred image back to the map using ImageOverlay
         folium.raster_layers.ImageOverlay(

@@ -6,6 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/.localenv" />
       <excludeFolder url="file://$MODULE_DIR$/src/embedded" />
       <excludeFolder url="file://$MODULE_DIR$/src/embedded/bme688/deployment" />
+      <excludeFolder url="file://$MODULE_DIR$/src/imgs" />
       <excludeFolder url="file://$MODULE_DIR$/src/scripts" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.12 (enose)" jdkType="Python SDK" />

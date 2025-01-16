@@ -37,10 +37,10 @@ const char* ssid = "Sadeh";
 const char* password = "7555054054";
 
 // MQTT parameters
-const char* mqttServer = "10.0.0.6";
+const char* mqttServer = "54.166.148.213";
 const int mqttPort = 1883;
-const char* mqttUser = "admin";
-const char* mqttPassword = "admin";
+const char* mqttUser = "ubuntu";
+const char* mqttPassword = "2B-ornot-2B";
 const char* mqttTopic = "sensorData";
 const char* mqttClientName = "BME688";
 
@@ -95,6 +95,55 @@ commMux communicationSetup[NUM_OF_SENS];
 uint8_t bsecMemBlock[NUM_OF_SENS][BSEC_INSTANCE_SIZE];
 uint8_t sensor = 0;
 
+const char* ntpServer = "0.pool.ntp.org";
+const long  gmtOffset_sec = 2 * 60 * 60;
+const int   daylightOffset_sec = 0;
+
+#include <time.h>                   // time() ctime()
+time_t now;                         // this is the epoch
+tm myTimeInfo;                      // the structure tm holds time information in a more convient way
+
+void showTime() {
+  time(&now);                       // read the current time
+  localtime_r(&now, &myTimeInfo);           // update the structure tm with the current time
+  Serial.print("year:");
+  Serial.print(myTimeInfo.tm_year + 1900);  // years since 1900
+  Serial.print("\tmonth:");
+  Serial.print(myTimeInfo.tm_mon + 1);      // January = 0 (!)
+  Serial.print("\tday:");
+  Serial.print(myTimeInfo.tm_mday);         // day of month
+  Serial.print("\thour:");
+  Serial.print(myTimeInfo.tm_hour);         // hours since midnight  0-23
+  Serial.print("\tmin:");
+  Serial.print(myTimeInfo.tm_min);          // minutes after the hour  0-59
+  Serial.print("\tsec:");
+  Serial.print(myTimeInfo.tm_sec);          // seconds after the minute  0-61*
+  Serial.print("\twday");
+  Serial.print(myTimeInfo.tm_wday);         // days since Sunday 0-6
+  if (myTimeInfo.tm_isdst == 1)             // Daylight Saving Time flag
+    Serial.print("\tDST");
+  else
+    Serial.print("\tstandard");
+
+  Serial.println();
+}
+
+void synchroniseWith_NTP_Time() {
+  Serial.print("configTime uses ntpServer ");
+  Serial.println(ntpServer);
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  Serial.print("synchronising time");
+
+  while (myTimeInfo.tm_year + 1900 < 2000 ) {
+    time(&now);                       // read the current time
+    localtime_r(&now, &myTimeInfo);
+    delay(100);
+    Serial.print(".");
+  }
+  Serial.print("\n time synchronsized \n");
+  showTime();
+}
+
 /* Entry point for the example */
 void setup(void)
 {
@@ -130,6 +179,9 @@ void setup(void)
         delay(500);
           Serial.print(".");
     }
+
+    synchroniseWith_NTP_Time();
+
 
     mqttClient.setServer(mqttServer, mqttPort);
     mqttClient.setBufferSize(600);
@@ -207,57 +259,57 @@ void newDataCallback(const bme68xData data, const bsecOutputs outputs, Bsec2 bse
         return;
     }
 
-    Serial.println("BSEC outputs:\n\tsensor num = " + String(sensor));
-    Serial.println("\ttimestamp = " + String((int) (outputs.output[0].time_stamp / INT64_C(1000000))));
+    //Serial.println("BSEC outputs:\n\tsensor num = " + String(sensor));
+    //Serial.println("\ttimestamp = " + String((int) (outputs.output[0].time_stamp / INT64_C(1000000))));
     for (uint8_t i = 0; i < outputs.nOutputs; i++)
     {
         const bsecData output  = outputs.output[i];
         switch (output.sensor_id)
         {
             case BSEC_OUTPUT_IAQ:
-                Serial.println("\tiaq = " + String(output.signal));
-                Serial.println("\tiaq accuracy = " + String((int) output.accuracy));
+                //Serial.println("\tiaq = " + String(output.signal));
+                //Serial.println("\tiaq accuracy = " + String((int) output.accuracy));
                 break;
             case BSEC_OUTPUT_STATIC_IAQ:
-                Serial.println("\tstatic iaq = " + String(output.signal));
-                Serial.println("\tiaq accuracy = " + String((int) output.accuracy));
+                //Serial.println("\tstatic iaq = " + String(output.signal));
+                //Serial.println("\tiaq accuracy = " + String((int) output.accuracy));
                 break;
             case BSEC_OUTPUT_CO2_EQUIVALENT:
-                Serial.println("\tCO2 equiv. = " + String(output.signal));
+                //Serial.println("\tCO2 equiv. = " + String(output.signal));
                 break;
             case BSEC_OUTPUT_BREATH_VOC_EQUIVALENT:
-                Serial.println("\tBreath VOC = " + String(output.signal));
+                //Serial.println("\tBreath VOC = " + String(output.signal));
                 break;
             case BSEC_OUTPUT_RAW_TEMPERATURE:
-                Serial.println("\ttemperature = " + String(output.signal));
+                //Serial.println("\ttemperature = " + String(output.signal));
                 break;
             case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
-                Serial.println("\tTemprature (compensated) = " + String(output.signal));
+                //Serial.println("\tTemprature (compensated) = " + String(output.signal));
                 sensorData[sensor].temperature = output.signal;
                 break;
             case BSEC_OUTPUT_RAW_PRESSURE:
-                Serial.println("\tpressure = " + String(output.signal));
+                //Serial.println("\tpressure = " + String(output.signal));
                 sensorData[sensor].pressure = output.signal;
                 break;
             case BSEC_OUTPUT_RAW_HUMIDITY:
-                Serial.println("\thumidity = " + String(output.signal));
+                //Serial.println("\thumidity = " + String(output.signal));
                 break;
             case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY:
-                Serial.println("\tHumidity (compensated) = " + String(output.signal));
+                //Serial.println("\tHumidity (compensated) = " + String(output.signal));
                 sensorData[sensor].humidity = output.signal;
                 break;
             case BSEC_OUTPUT_RAW_GAS:
-                Serial.println("\tgas resistance = " + String(output.signal));
+                //Serial.println("\tgas resistance = " + String(output.signal));
                 sensorData[sensor].gas_resistance = output.signal;
                 break;
             case BSEC_OUTPUT_GAS_PERCENTAGE:
-                Serial.println("\tgas percent. = " + String(output.signal));
+                //Serial.println("\tgas percent. = " + String(output.signal));
                 break;
             case BSEC_OUTPUT_STABILIZATION_STATUS:
-                Serial.println("\tstabilization status = " + String(output.signal));
+                //Serial.println("\tstabilization status = " + String(output.signal));
                 break;
             case BSEC_OUTPUT_RUN_IN_STATUS:
-                Serial.println("\trun in status = " + String(output.signal));
+                //Serial.println("\trun in status = " + String(output.signal));
                 break;
             default:
                 break;

@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from scipy.stats import zscore
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 
+from app.db_adapter import DBAdapter
 from app.geo_coloring import GeoColoring
 from misc.random_hike import generate_random_hike
 
@@ -24,13 +26,13 @@ class SmellyCat:
 
     msg_count = 0
 
-    def __init__(self, broker, port, topic, client_id, username, password):
-        self.broker = broker
-        self.port = port
-        self.topic = topic
-        self.client_id = client_id
-        self.username = username
-        self.password = password
+    def __init__(self, broker_config, db_config):
+        self.broker = broker_config['broker']
+        self.port = broker_config['port']
+        self.topic = broker_config['topic']
+        self.client_id = broker_config['client_id']
+        self.username = broker_config['username']
+        self.password = broker_config['password']
         self.sensor_data_df = pd.DataFrame(columns=[
             'timestamp',
             'temperature',
@@ -57,6 +59,8 @@ class SmellyCat:
         self.step = 0
         self.gcol = GeoColoring()
         self.geomap = None
+
+        self.db = DBAdapter(db_config)
 
     class SensorData:
         def __init__(self, sensor_id, sensor_values):
@@ -217,29 +221,37 @@ class SmellyCat:
     def process_sensor_data(self, sensor_data):
         _smell, _temperature, _pressure, _humidity = self.smell(sensor_data)
 
+        # TODO read actual GPS
+        c = self.hike_coordinates[self.step]
+        self.step += 1
+
         # Store time series
-        dpoints = [s[5] for s in eval(sensor_data)['datapoints']]
+        _sensor_data = eval(sensor_data)['datapoints']
+        _gas_resistances = [s[5] for s in _sensor_data]
         sample_df = pd.DataFrame({
-            'timestamp': datetime.now(),
-            'temperature': _temperature,
-            'pressure': _pressure,
+            'timestamp': int(datetime.now().timestamp()),
+            'temperature_celsius': _temperature,
+            'barometric_pressure': _pressure,
             'humidity': _humidity,
-            'gas_resistance0': dpoints[0],
-            'gas_resistance1': dpoints[1],
-            'gas_resistance2': dpoints[2],
-            'gas_resistance3': dpoints[3],
-            'gas_resistance4': dpoints[4],
-            'gas_resistance5': dpoints[5],
-            'gas_resistance6': dpoints[6],
-            'gas_resistance7': dpoints[7],
+            'gas_resistance0': _gas_resistances[0],
+            'gas_resistance1': _gas_resistances[1],
+            'gas_resistance2': _gas_resistances[2],
+            'gas_resistance3': _gas_resistances[3],
+            'gas_resistance4': _gas_resistances[4],
+            'gas_resistance5': _gas_resistances[5],
+            'gas_resistance6': _gas_resistances[6],
+            'gas_resistance7': _gas_resistances[7],
+            'gps_latitude': c[0],
+            'gps_longitude': c[1],
         }, index=[0])
 
         self.sensor_data_df = pd.concat([self.sensor_data_df, sample_df], ignore_index=True)
 
+        self.db.insert(table='datapoints', datapoints=sample_df.to_dict('records'))
+
         if len(self.sensor_data_df) >= max(3, self.NUM_SAMPLES_TO_PROCESS):
             rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(max(3, self.NUM_SAMPLES_TO_PROCESS)), _smell, plot=False)
 
-            c = self.hike_coordinates[self.step]
             r, g, b = rgb[0]
             self.geomap, bounding_box = self.gcol.create_colored_hexagon_map(self.geomap, c[1], c[0], resolution=13, color=f"rgba({r}, {g}, {b}, {0.8})")
             self.geomap.save("geomap.html")
@@ -249,7 +261,10 @@ class SmellyCat:
                                                                   output_image='smellycat_hike.png')
             self.geomap.save("geomap.html")
 
-            self.step += 1
+            try:
+                pass
+            except:
+                print(f'Error saving datapoint to DB: {sys.exc_info()[0]}')
 
             try:
                 response = requests.post('http://localhost:5000/update',
@@ -257,19 +272,20 @@ class SmellyCat:
                                          headers={'Content-Type': 'application/json'})
                 print(response.status_code, _smell, rgb, list(reduced_features[0]))
             except:
-                pass
+                print(f'Error posting update to server: {sys.exc_info()[0]}')
 
     def connect_mqtt(self):
         def on_connect(self, userdata, flags, rc):
             if rc == 0:
-                print("Connected to MQTT Broker: {}".format(broker))
+                print("Connected to MQTT Broker: {}".format(self.extra_data["broker"]))
             else:
                 print("Failed to connect, erorr {}}".format(rc))
 
         client = mqtt_client.Client(self.client_id)
         client.username_pw_set(self.username, self.password)
+        client.extra_data = {"broker": self.broker}
         client.on_connect = on_connect
-        client.connect(broker, port)
+        client.connect(self.broker, self.port)
         return client
 
     def subscribe(self, client, topic):
@@ -284,20 +300,26 @@ class SmellyCat:
 
     def run(self):
         client = self.connect_mqtt()
-        self.subscribe(client, topic)
+        self.subscribe(client, self.topic)
         client.loop_forever()
 
 
 if __name__ == "__main__":
-    ###########################################################
-    # MQTT Broker info
-    ###########################################################
-    broker = '54.166.148.213'
-    port = 1883
-    topic = "sensorData"
-    client_id = f'eNose-{random.randint(0, 100)}'
-    username = 'ubuntu'
-    password = '2B-ornot-2B'
+    broker_config = {
+        "broker": "54.166.148.213",
+        "port": 1883,
+        "topic": "sensorData",
+        "client_id": f"eNose-{random.randint(0, 100)}",
+        "username": "ubuntu",
+        "password": "2B-ornot-2B",
+    }
 
-    r = SmellyCat(broker, port, topic, client_id, username, password)
+    db_config = {
+        'user': 'ubuntu',
+        'password': '2B-ornot-2B',
+        'host': '54.166.148.213',
+        'database': 'enose'
+    }
+
+    r = SmellyCat(broker_config, db_config)
     r.run()

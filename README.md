@@ -1,7 +1,7 @@
 
 # Smellycat
 
-<img src="src/imgs/smellycat.png" style="width: 100%; height: 100%; object-fit: cover; object-position: center; "/>
+<img src="imgs/smellycat.png" style="width: 100%; height: 100%; object-fit: cover; object-position: center; "/>
 
 ### Background
 Years ago I happened to eat lunch at the SCO university open air auditorium. Some lecturer was supposed to come up

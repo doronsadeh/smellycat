@@ -27,9 +27,11 @@ class SmellyCat:
     msg_count = 0
 
     def __init__(self, broker_config, db_config):
+        self.current_location = {}
         self.broker = broker_config['broker']
         self.port = broker_config['port']
-        self.topic = broker_config['topic']
+        self.sensor_topic = broker_config['sensor_topic']
+        self.gps_topic = broker_config['gps_topic']
         self.client_id = broker_config['client_id']
         self.username = broker_config['username']
         self.password = broker_config['password']
@@ -218,18 +220,63 @@ class SmellyCat:
 
         return rgb, reduced_features
 
+    def _interval(self, timestamp):
+        return int(str(timestamp)[:-2])
+
+    def process_gps_data(self, lat_long_str: str):
+        lat_lon_data = json.loads(lat_long_str)
+        timestamp = int(lat_lon_data['timestamp'])
+        lat = lat_lon_data['latitude']
+        lon = lat_lon_data['longitude']
+
+        # Store all lat/lon pairs for the last minute
+        ts_interval = self._interval(timestamp)
+        if ts_interval not in self.current_location:
+            self.current_location[ts_interval] = [(lat, lon)]
+        else:
+            self.current_location[ts_interval].append((lat, lon))
+
+        # Delete entries older than 15 minutes
+        last_ts = max(self.current_location.keys())
+        _ts_head = {}
+        for _ts in self.current_location:
+            if _ts < last_ts - 15:
+                del self.current_location[_ts]
+
     def process_sensor_data(self, sensor_data):
         _smell, _temperature, _pressure, _humidity = self.smell(sensor_data)
 
         # TODO read actual GPS
-        c = self.hike_coordinates[self.step]
-        self.step += 1
+        # c = self.hike_coordinates[self.step]
+        # self.step += 1
+
+        _current_ts = int(datetime.now().timestamp())
+
+        _current_interval = self._interval(_current_ts)
+
+        c = None
+        _locations = self.current_location.get(_current_interval, None)
+        if _locations is not None:
+            # If we are on the same minute, average the locations registered
+            # throughout the minute
+            _mean_lats = np.mean([l[0] for l in _locations])
+            _mean_lons = np.mean([l[1] for l in _locations])
+            c = (_mean_lats, _mean_lons)
+        else:
+            # Else, try to find the last know location no longer ago than 1 minute
+            _last_known_location_ts = max(self.current_location.keys())
+            if abs(_current_interval - _last_known_location_ts) <= 1:
+                c = self.current_location[_last_known_location_ts][-1]
+            else:
+                # Else, give up
+                c = (-1.0, -1.0)
+                print(f'No GPS data for interval {_current_interval}')
 
         # Store time series
         _sensor_data = eval(sensor_data)['datapoints']
         _gas_resistances = [s[5] for s in _sensor_data]
         sample_df = pd.DataFrame({
-            'timestamp': int(datetime.now().timestamp()),
+            'timestamp': _current_ts,
             'temperature_celsius': _temperature,
             'barometric_pressure': _pressure,
             'humidity': _humidity,
@@ -259,7 +306,7 @@ class SmellyCat:
                                                                   html_file=os.path.join(Path(__file__).parent, 'geomap.html'),
                                                                   bounding_box=bounding_box,
                                                                   output_image='smellycat_hike.png')
-            self.geomap.save("geomap.html")
+            # self.geomap.save("geomap.html")
 
             try:
                 pass
@@ -292,7 +339,10 @@ class SmellyCat:
         def on_message(client, userdata, msg):
             self.msg_count += 1
             if self.msg_count % self.PROCESS_EVERY_1_IN_N_MESSAGES == 0:
-                self.process_sensor_data(msg.payload.decode())
+                if msg.topic == self.gps_topic:
+                    self.process_gps_data(msg.payload.decode())
+                if msg.topic == self.sensor_topic:
+                    self.process_sensor_data(msg.payload.decode())
                 # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
 
         client.subscribe(topic)
@@ -300,7 +350,8 @@ class SmellyCat:
 
     def run(self):
         client = self.connect_mqtt()
-        self.subscribe(client, self.topic)
+        self.subscribe(client, self.sensor_topic)
+        self.subscribe(client, self.gps_topic)
         client.loop_forever()
 
 
@@ -308,7 +359,8 @@ if __name__ == "__main__":
     broker_config = {
         "broker": "54.166.148.213",
         "port": 1883,
-        "topic": "sensorData",
+        "sensor_topic": "sensorData",
+        "gps_topic": "gps/location",
         "client_id": f"eNose-{random.randint(0, 100)}",
         "username": "ubuntu",
         "password": "2B-ornot-2B",

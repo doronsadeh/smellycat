@@ -43,7 +43,7 @@ class DBAdapter:
             if connection.is_connected():
                 cursor.close()
                 connection.close()
-                print("MySQL connection closed.")
+                # print("MySQL connection closed.")
 
     def insert(self, table: str, datapoints: list[dict[str, any]]):
         try:
@@ -93,14 +93,14 @@ class DBAdapter:
 
                 # Commit the transaction
                 connection.commit()
-                print("Data inserted successfully!")
+                # print("Data inserted successfully!")
         except mysql.connector.Error as err:
             print(f"Error: {err}")
         finally:
             if connection.is_connected():
                 cursor.close()
                 connection.close()
-                print("MySQL connection closed.")
+                # print("MySQL connection closed.")
 
 
 if __name__ == "__main__":

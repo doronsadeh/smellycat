@@ -264,10 +264,15 @@ class SmellyCat:
             c = (_mean_lats, _mean_lons)
         else:
             # Else, try to find the last know location no longer ago than 1 minute
-            _last_known_location_ts = max(self.current_location.keys())
-            if abs(_current_interval - _last_known_location_ts) <= 1:
-                c = self.current_location[_last_known_location_ts][-1]
-            else:
+            try:
+                _last_known_location_ts = max(self.current_location.keys())
+                if abs(_current_interval - _last_known_location_ts) <= 1:
+                    c = self.current_location[_last_known_location_ts][-1]
+                else:
+                    # Else, give up
+                    c = (-1.0, -1.0)
+                    print(f'No GPS data for interval {_current_interval}')
+            except:
                 # Else, give up
                 c = (-1.0, -1.0)
                 print(f'No GPS data for interval {_current_interval}')
@@ -317,7 +322,7 @@ class SmellyCat:
                 response = requests.post('http://localhost:5000/update',
                                          data=json.dumps({"datapoint": [(_smell / 100000.0) * 100.0, list(reduced_features[0]), _temperature, _pressure, _humidity]}),
                                          headers={'Content-Type': 'application/json'})
-                print(response.status_code, _smell, rgb, list(reduced_features[0]))
+                # print(response.status_code, _smell, rgb, list(reduced_features[0]))
             except:
                 print(f'Error posting update to server: {sys.exc_info()[0]}')
 
@@ -338,6 +343,7 @@ class SmellyCat:
     def subscribe(self, client, topic):
         def on_message(client, userdata, msg):
             self.msg_count += 1
+            print(f"Received `{self.msg_count}` from `{msg.topic}` topic")
             if self.msg_count % self.PROCESS_EVERY_1_IN_N_MESSAGES == 0:
                 if msg.topic == self.gps_topic:
                     self.process_gps_data(msg.payload.decode())

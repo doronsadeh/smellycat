@@ -158,7 +158,6 @@ class GeoColoring:
         with Image.open(screenshot_path) as img:
             cropped_img = img.crop((left, upper, right, lower))
             cropped_img.save(output_image, "PNG")
-        print(f"Cropped image saved at '{output_image}'")
 
         # Load the uploaded image
         image = cv2.imread(output_image)

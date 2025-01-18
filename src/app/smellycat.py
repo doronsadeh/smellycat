@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import requests
 from paho.mqtt import client as mqtt_client
+from paho.mqtt.client import MQTTv5
 from scipy.stats import zscore
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
@@ -32,7 +33,6 @@ class SmellyCat:
         self.port = broker_config['port']
         self.sensor_topic = broker_config['sensor_topic']
         self.gps_topic = broker_config['gps_topic']
-        self.client_id = broker_config['client_id']
         self.username = broker_config['username']
         self.password = broker_config['password']
         self.sensor_data_df = pd.DataFrame(columns=[
@@ -327,20 +327,14 @@ class SmellyCat:
                 print(f'Error posting update to server: {sys.exc_info()[0]}')
 
     def connect_mqtt(self):
-        def on_connect(self, userdata, flags, rc):
+        def on_connect(client, userdata, flags, rc, properties=None):
             if rc == 0:
-                print("Connected to MQTT Broker: {}".format(self.extra_data["broker"]))
+                client.subscribe(self.sensor_topic)
+                client.subscribe(self.gps_topic)
+                print("Connected to MQTT Broker: {}".format(client.extra_data["broker"]))
             else:
                 print("Failed to connect, erorr {}}".format(rc))
 
-        client = mqtt_client.Client(self.client_id)
-        client.username_pw_set(self.username, self.password)
-        client.extra_data = {"broker": self.broker}
-        client.on_connect = on_connect
-        client.connect(self.broker, self.port)
-        return client
-
-    def subscribe(self, client, topic):
         def on_message(client, userdata, msg):
             self.msg_count += 1
             print(f"Received `{self.msg_count}` from `{msg.topic}` topic")
@@ -351,13 +345,25 @@ class SmellyCat:
                     self.process_sensor_data(msg.payload.decode())
                 # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
 
-        client.subscribe(topic)
+        def on_log(client, userdata, level, buf):
+            print("Log: ", buf)
+
+        def on_disconnect(client, userdata, rc, properties=None):
+            if rc != 0:
+                print("Unexpected disconnection.")
+
+        client = mqtt_client.Client(client_id=f"eNose-{random.randint(0, 1000)}", protocol=MQTTv5)
+        client.username_pw_set(self.username, self.password)
+        client.extra_data = {"broker": self.broker}
+        client.on_connect = on_connect
         client.on_message = on_message
+        client.on_log = on_log
+        client.on_disconnect = on_disconnect
+        client.connect(self.broker, self.port, clean_start=True, keepalive=60)
+        return client
 
     def run(self):
         client = self.connect_mqtt()
-        self.subscribe(client, self.sensor_topic)
-        self.subscribe(client, self.gps_topic)
         client.loop_forever()
 
 
@@ -367,7 +373,6 @@ if __name__ == "__main__":
         "port": 1883,
         "sensor_topic": "sensorData",
         "gps_topic": "gps/location",
-        "client_id": f"eNose-{random.randint(0, 100)}",
         "username": "ubuntu",
         "password": "2B-ornot-2B",
     }

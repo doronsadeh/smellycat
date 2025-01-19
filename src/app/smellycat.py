@@ -240,8 +240,9 @@ class SmellyCat:
         last_ts = max(self.current_location.keys())
         _ts_head = {}
         for _ts in self.current_location:
-            if _ts < last_ts - 15:
-                del self.current_location[_ts]
+            if _ts >= last_ts - 15:
+                _ts_head[_ts] = self.current_location[_ts]
+        self.current_location = _ts_head
 
     def process_sensor_data(self, sensor_data):
         _smell, _temperature, _pressure, _humidity = self.smell(sensor_data)

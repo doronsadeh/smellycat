@@ -10,6 +10,9 @@ with the following question: "How do rhinoceroses see the world?"
 
 The answer was: via **smell**.
 
+> “No matter what is doing the creating, I have to say that the giraffe and the rhinoceros are ridiculous.”
+> ― Kurt Vonnegut, Timequake
+
 Well, that got my attention, 30 years ago. I recently remembered that for some odd reason
 and decided to build on the late Vonnegut's vision. The system quickly came to be using
 a Bosch multi-sensor (BME688), an Arduino (ESP32 Feather), and a Raspberry Pi (Zero WH)

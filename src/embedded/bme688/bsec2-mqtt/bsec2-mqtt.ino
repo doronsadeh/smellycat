@@ -53,8 +53,25 @@ bme68xData sensorData[NUM_OF_SENS] = {0};
 mqttDataLogger logger(&mqttClient, NUM_OF_SENS, mqttTopic);
 
 void reconnect() {
-  // mqttClient.setServer(mqttServer, mqttPort);
-  // Loop until we're reconnected
+  if (WiFi.status() != WL_CONNECTED) {
+    // First try to reconnect to WiFi if needed
+    Serial.println("Attempting to connect to WiFi ...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+          Serial.print(WiFi.status());
+          delay(500);
+          Serial.print(".");
+    }
+
+    Serial.println("\nReconnected to WiFi!");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    // Reconnect to NTP and re-sync time
+    synchroniseWith_NTP_Time();
+  }
+
+  // Loop until we're reconnected to MQTT
   while (!mqttClient.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
@@ -129,7 +146,7 @@ void showTime() {
 }
 
 void synchroniseWith_NTP_Time() {
-  Serial.print("configTime uses ntpServer ");
+  Serial.print("ConfigTime uses ntpServer ");
   Serial.println(ntpServer);
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   Serial.print("synchronising time");
@@ -172,17 +189,6 @@ void setup(void)
     /* Valid for boards with USB-COM. Wait until the port is open */
     while(!Serial) delay(10);
 
-     // Connect to WiFi
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(WiFi.status());
-        delay(500);
-          Serial.print(".");
-    }
-
-    synchroniseWith_NTP_Time();
-
-
     mqttClient.setServer(mqttServer, mqttPort);
     mqttClient.setBufferSize(600);
     Serial.print("MQTT client buffer size: ");
@@ -191,6 +197,7 @@ void setup(void)
     reconnect();
 
     logger.beginSensorData();
+
     for (uint8_t i = 0; i < NUM_OF_SENS; i++)
     {
         /* Sets the Communication interface for the sensors */

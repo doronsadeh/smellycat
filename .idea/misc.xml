@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.12 (eNose-main)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (enose)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.11.2 (sftp://pi@gps.local:22/home/pi/gpsenv/bin/python3)" project-jdk-type="Python SDK" />
 </project>

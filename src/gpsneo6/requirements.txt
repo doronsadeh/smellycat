@@ -1,0 +1,3 @@
+pyserial
+gps3
+pynmea2

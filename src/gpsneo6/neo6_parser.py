@@ -31,6 +31,8 @@ def parse_gps_data():
                     print(f"Course: {gprmc.true_course}°")
                     print("-" * 50)
 
+            # TODO send data to MQTT gps/location
+
     except serial.SerialException as e:
         print(f"Serial error: {e}")
     except pynmea2.ParseError as e:
@@ -42,4 +44,13 @@ def parse_gps_data():
 
 # Run the GPS parser
 if __name__ == "__main__":
+    broker_config = {
+        "broker": "54.166.148.213",
+        "port": 1883,
+        "sensor_topic": "sensorData",
+        "gps_topic": "gps/location",
+        "username": "ubuntu",
+        "password": "2B-ornot-2B",
+    }
+
     parse_gps_data()

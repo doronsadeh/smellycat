@@ -327,6 +327,7 @@ class SmellyCat:
             except:
                 print(f'Error posting update to server: {sys.exc_info()[0]}')
 
+    # TODO separate MQTT into its own class adapter
     def connect_mqtt(self):
         def on_connect(client, userdata, flags, rc, properties=None):
             if rc == 0:

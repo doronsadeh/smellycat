@@ -1,3 +1,4 @@
 pyserial
 gps3
 pynmea2
+paho-mqtt

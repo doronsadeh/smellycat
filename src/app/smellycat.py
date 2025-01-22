@@ -2,6 +2,7 @@ import json
 import os
 import random
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -11,6 +12,7 @@ import pandas as pd
 import requests
 from paho.mqtt import client as mqtt_client
 from paho.mqtt.client import MQTTv5
+from paho.mqtt.enums import CallbackAPIVersion
 from scipy.stats import zscore
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
@@ -18,6 +20,8 @@ from sklearn.preprocessing import MinMaxScaler
 from app.db_adapter import DBAdapter
 from app.geo_coloring import GeoColoring
 from misc.random_hike import generate_random_hike
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 class SmellyCat:
@@ -251,7 +255,7 @@ class SmellyCat:
         # c = self.hike_coordinates[self.step]
         # self.step += 1
 
-        _current_ts = int(datetime.now().timestamp())
+        _current_ts = int(datetime.utcnow().timestamp())
 
         _current_interval = self._interval(_current_ts)
 
@@ -298,7 +302,11 @@ class SmellyCat:
             'gps_longitude': c[1],
         }, index=[0])
 
-        self.sensor_data_df = pd.concat([self.sensor_data_df, sample_df], ignore_index=True)
+        # Exclude empty or all-NA DataFrames
+        dfs = [df.dropna(how='all') for df in [self.sensor_data_df, sample_df] if not df.empty]
+
+        # Concatenate only valid DataFrames
+        self.sensor_data_df = pd.concat(dfs, ignore_index=True)
 
         self.db.insert(table='datapoints', datapoints=sample_df.to_dict('records'))
 
@@ -327,7 +335,6 @@ class SmellyCat:
             except:
                 print(f'Error posting update to server: {sys.exc_info()[0]}')
 
-    # TODO separate MQTT into its own class adapter
     def connect_mqtt(self):
         def on_connect(client, userdata, flags, rc, properties=None):
             if rc == 0:
@@ -348,13 +355,16 @@ class SmellyCat:
                 # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
 
         def on_log(client, userdata, level, buf):
-            print("Log: ", buf)
+            pass
+            # print("Log: ", buf)
 
         def on_disconnect(client, userdata, rc, properties=None):
             if rc != 0:
                 print("Unexpected disconnection.")
 
-        client = mqtt_client.Client(client_id=f"eNose-{random.randint(0, 1000)}", protocol=MQTTv5)
+        client = mqtt_client.Client(client_id=f"eNose-{random.randint(0, 1000)}",
+                                    callback_api_version=CallbackAPIVersion.VERSION2,
+                                    protocol=MQTTv5)
         client.username_pw_set(self.username, self.password)
         client.extra_data = {"broker": self.broker}
         client.on_connect = on_connect

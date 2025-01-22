@@ -33,8 +33,8 @@
 #define ERROR_DUR   1000
 
 // WiFi parameters
-const char* ssid = "Smellycat";
-const char* password = "0544502042";
+const char* ssid = "Sadeh";
+const char* password = "7555054054";
 
 // MQTT parameters
 const char* mqttServer = "54.166.148.213";
@@ -52,6 +52,8 @@ PubSubClient mqttClient(espClient);
 bme68xData sensorData[NUM_OF_SENS] = {0};
 mqttDataLogger logger(&mqttClient, NUM_OF_SENS, mqttTopic);
 
+int ntpUpdateCycle100Ms = 600;
+
 void reconnect() {
   if (WiFi.status() != WL_CONNECTED) {
     // First try to reconnect to WiFi if needed
@@ -66,9 +68,6 @@ void reconnect() {
     Serial.println("\nReconnected to WiFi!");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
-
-    // Reconnect to NTP and re-sync time
-    synchroniseWith_NTP_Time();
   }
 
   // Loop until we're reconnected to MQTT
@@ -84,6 +83,12 @@ void reconnect() {
       // Wait 5 seconds before retrying
       delay(5000);
     }
+  }
+
+  if (--ntpUpdateCycle100Ms < 0) {
+    // Reconnect to NTP and re-sync time
+    synchroniseWith_NTP_Time();
+    ntpUpdateCycle100Ms = 600;
   }
 }
 /* Helper functions declarations */
@@ -112,7 +117,7 @@ commMux communicationSetup[NUM_OF_SENS];
 uint8_t bsecMemBlock[NUM_OF_SENS][BSEC_INSTANCE_SIZE];
 uint8_t sensor = 0;
 
-const char* ntpServer = "0.pool.ntp.org";
+const char* ntpServer = "time1.google.com";
 const long  gmtOffset_sec = 2 * 60 * 60;
 const int   daylightOffset_sec = 0;
 
@@ -245,6 +250,9 @@ void loop(void)
          checkBsecStatus(envSensor[sensor]);
         }
     }
+
+    delay(100);
+
     reconnect();
 }
 

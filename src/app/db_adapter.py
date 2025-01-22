@@ -87,7 +87,7 @@ class DBAdapter:
                     datapoint["gas_resistance7"],
                     datapoint["gps_latitude"],
                     datapoint["gps_longitude"],
-                    datetime.datetime.now()
+                    datetime.datetime.utcnow()
                 )
                 cursor.execute(insert_query, values)
 

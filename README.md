@@ -24,8 +24,7 @@ and a finalized realtime smell map.
 
 ![Smell Graphs](./imgs/smell-graphs.png)
 <div style="text-align: center;font-size: small">Figure 1: Sensors Readouts</div>
-
-
+<br>
 To get the smell map in such a way that different smells get different colors while keeping
 similar smells as similar colors, I had to employ a mapping from the 8-fold vector space
 provided by the 8 gas sensors on the BME688, onto
@@ -40,8 +39,7 @@ to flatten the colors into a smooth color field.
 
 ![Smell Map](./imgs/smell-map.png)
 <div style="text-align: center;font-size: small">Figure 2: Geo Smell Dispersion Map</div>
-
-
+<br>
 ### Setup
 Make sure to set the system to sync with the following NTP server (both on Arduino, and GPS hosts):
 > sudo nano /etc/systemd/timesyncd.conf
@@ -60,15 +58,14 @@ Check all is set up correctly:
 
 
 ### Architecture
-The architecture comprise:
+The architecture comprises:
 - BME688 gas sensor attached to an Arduino Feather ESP32 (BME688 dev kit) 
 - Raspberry Pi Zero WH attached to a GT-U7 GPS module
 - A battery pack with dual outputs
 
 ![](./imgs/arch.png)
 <div style="text-align: center;font-size: small">Figure 3: Hardware Architecture</div>
-
-
+<br>
 The dev kit is powered by one battery port, while the Raspberry Pi hooks into the other.
 The raspberry Pi is connected via micro USB to the GPS module (note that the GPS module could have
 been connected directly to the Arduino, however t has no free USB port, not are its TX/RX serial pins available as they are

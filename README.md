@@ -40,9 +40,50 @@ to flatten the colors into a smooth color field.
 ![Smell Map](./imgs/smell-map.png)
 <div style="text-align: center;font-size: small">Figure 2: Geo Smell Dispersion Map</div>
 
-### Architecture
+### Setup
+Make sure to set the system to sync with the following NTP server (both on Arduino, and GPS hosts):
+> sudo nano /etc/systemd/timesyncd.conf
 
-TBD
+Add/Modify the file as follows:
+<pre>
+[Time]
+  NTP=time1.google.com time2.google.com
+  ...
+</pre>
+Restart the service:
+> sudo systemctl restart systemd-timesyncd.service
+
+Check all is set up correctly:
+> timedatectl status
+
+
+### Architecture
+The architecture comprise:
+- BME688 gas sensor attached to an Arduino Feather ESP32 (BME688 dev kit) 
+- Raspberry Pi Zero WH attached to a GT-U7 GPS module
+- A battery pack with dual outputs
+
+![](./imgs/arch.png)
+<div style="text-align: center;font-size: small">Figure 3: Hardware Architecture</div>
+
+The dev kit is powered by one battery port, while the Raspberry Pi hooks into the other.
+The raspberry Pi is connected via micro USB to the GPS module (note that the GPS module could have
+been connected directly to the Arduino, however t has no free USB port, not are its TX/RX serial pins available as they are
+connected to the BME688).
+
+The dev kit is WiFi-able, and so is the Raspberry Pi. Both are connected to as local mobile WiFi
+usually via a smartphone in the vicinity. 
+
+The modules are sending their respective data to an MQTT broker in the cloud.
+
+The cloud server is reading both the GPS data queue, and the gas sensing queue
+from the separate MQTT topics fed by the above-mentioned modules.
+
+The server then correlates the location and gas sensing (by approximated timestamps)
+and generates the _smell image_ projected on a map of the traversed area.
+
+
+
 
 ### Usage
 

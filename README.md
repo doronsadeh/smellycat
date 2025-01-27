@@ -25,6 +25,7 @@ and a finalized realtime smell map.
 ![Smell Graphs](./imgs/smell-graphs.png)
 <div style="text-align: center;font-size: small">Figure 1: Sensors Readouts</div>
 
+
 To get the smell map in such a way that different smells get different colors while keeping
 similar smells as similar colors, I had to employ a mapping from the 8-fold vector space
 provided by the 8 gas sensors on the BME688, onto

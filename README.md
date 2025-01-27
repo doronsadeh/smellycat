@@ -40,6 +40,7 @@ to flatten the colors into a smooth color field.
 ![Smell Map](./imgs/smell-map.png)
 <div style="text-align: center;font-size: small">Figure 2: Geo Smell Dispersion Map</div>
 
+
 ### Setup
 Make sure to set the system to sync with the following NTP server (both on Arduino, and GPS hosts):
 > sudo nano /etc/systemd/timesyncd.conf
@@ -66,6 +67,7 @@ The architecture comprise:
 ![](./imgs/arch.png)
 <div style="text-align: center;font-size: small">Figure 3: Hardware Architecture</div>
 
+
 The dev kit is powered by one battery port, while the Raspberry Pi hooks into the other.
 The raspberry Pi is connected via micro USB to the GPS module (note that the GPS module could have
 been connected directly to the Arduino, however t has no free USB port, not are its TX/RX serial pins available as they are
@@ -81,9 +83,6 @@ from the separate MQTT topics fed by the above-mentioned modules.
 
 The server then correlates the location and gas sensing (by approximated timestamps)
 and generates the _smell image_ projected on a map of the traversed area.
-
-
-
 
 ### Usage
 

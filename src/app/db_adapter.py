@@ -103,23 +103,3 @@ class DBAdapter:
                 # print("MySQL connection closed.")
 
 
-if __name__ == "__main__":
-    db_config = {
-        'user': 'ubuntu',
-        'password': '2B-ornot-2B',
-        'host': '54.166.148.213',
-        'database': 'enose'
-    }
-    db_adapter = DBAdapter(db_config)
-    db_adapter.insert(table="datapoints",
-                      datapoints=[{
-                          "sensor_id": 1,
-                          "timestamp": 1677721600,
-                          "temperature_celsius": 25.0,
-                          "barometric_pressure": 1013.25,
-                          "humidity": 50.0,
-                          "gas_resistance": 1000.0,
-                          "gps_latitude": 40.7128,
-                          "gps_longitude": -74.0060,
-                      }
-                      ])

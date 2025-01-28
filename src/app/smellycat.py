@@ -388,12 +388,12 @@ if __name__ == "__main__":
         "sensor_topic": "sensorData",
         "gps_topic": "gps/location",
         "username": "ubuntu",
-        "password": "2B-ornot-2B",
+        "password": os.getenv("BROKER_PASSWORD"),
     }
 
     db_config = {
-        'user': 'ubuntu',
-        'password': '2B-ornot-2B',
+        'user': 'smellycat',
+        'password': os.getenv("DB_PASSWORD"),
         'host': '54.166.148.213',
         'database': 'enose'
     }

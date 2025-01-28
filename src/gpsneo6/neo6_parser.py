@@ -1,4 +1,5 @@
 import json
+import os
 import random
 from datetime import datetime
 from time import sleep
@@ -96,10 +97,6 @@ class GPSNeo6Parser:
         def on_log(client, userdata, level, buf):
             print("Log: ", buf)
 
-        def on_disconnect(client, userdata, rc, properties=None):
-            if rc != 0:
-                print("Unexpected disconnection.")
-
         client = mqtt_client.Client(client_id=f"eNose-{random.randint(0, 1000)}",
                                     callback_api_version=CallbackAPIVersion.VERSION2,
                                     protocol=MQTTv5)
@@ -108,7 +105,6 @@ class GPSNeo6Parser:
         client.on_connect = on_connect
         client.on_message = on_message
         client.on_log = on_log
-        client.on_disconnect = on_disconnect
         client.connect(self.broker, self.port, clean_start=True, keepalive=60)
         return client
 
@@ -124,7 +120,7 @@ if __name__ == "__main__":
         "port": 1883,
         "gps_topic": "gps/location",
         "username": "ubuntu",
-        "password": "2B-ornot-2B",
+        "password": os.getenv("BROKER_PASSWORD"),
     }
 
     g = GPSNeo6Parser(broker_config)

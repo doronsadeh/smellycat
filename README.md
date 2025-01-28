@@ -23,7 +23,7 @@ such as humidity, barometric pressure and temperature (which I currently do not 
 and a finalized realtime smell map.
 
 ![Smell Graphs](./imgs/smell-graphs.png)
-<center> Figure 1: Sensors Readouts </center>
+<p align="center">Figure 1: Sensors Readouts</p>
 
 To get the smell map in such a way that different smells get different colors while keeping
 similar smells as similar colors, I had to employ a mapping from the 8-fold vector space

@@ -33,8 +33,8 @@
 #define ERROR_DUR   1000
 
 // WiFi parameters
-const char* ssid = "Sadeh";
-const char* password = "7555054054";
+const char* ssid = "smellycat";
+const char* password = "smellycat";
 
 // MQTT parameters
 const char* mqttServer = "54.166.148.213";

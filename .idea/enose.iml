@@ -8,6 +8,7 @@
       <excludeFolder url="file://$MODULE_DIR$/src/embedded" />
       <excludeFolder url="file://$MODULE_DIR$/src/embedded/bme688/deployment" />
       <excludeFolder url="file://$MODULE_DIR$/src/scripts" />
+      <excludeFolder url="file://$MODULE_DIR$/3dmodels" />
     </content>
     <orderEntry type="jdk" jdkName="Remote Python 3.11.2 (sftp://pi@gps.local:22/home/pi/gpsenv/bin/python3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

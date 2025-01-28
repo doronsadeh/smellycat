@@ -38,8 +38,8 @@ where a smelled-colored hexagon was placed. Once done a median filter was applie
 to flatten the colors into a smooth color field.
 
 ![Smell Map](./imgs/smell-map.png)
-<div style="text-align: center;font-size: small">Figure 2: Geo Smell Dispersion Map</div>
-<br>
+<p align="center">Figure 2: Geo Smell Dispersion Map</p>
+
 ### Setup
 Make sure to set the system to sync with the following NTP server (both on Arduino, and GPS hosts):
 > sudo nano /etc/systemd/timesyncd.conf
@@ -63,9 +63,9 @@ The architecture comprises:
 - Raspberry Pi Zero WH attached to a GT-U7 GPS module
 - A battery pack with dual outputs
 
-![](./imgs/arch.png)
-<div style="text-align: center;font-size: small">Figure 3: Hardware Architecture</div>
-<br>
+![Hardware Architecture](./imgs/arch.png)
+<p align="center">Figure 3: Hardware Architecture</p>
+
 The dev kit is powered by one battery port, while the Raspberry Pi hooks into the other.
 The raspberry Pi is connected via micro USB to the GPS module (note that the GPS module could have
 been connected directly to the Arduino, however t has no free USB port, not are its TX/RX serial pins available as they are
@@ -84,9 +84,13 @@ and generates the _smell image_ projected on a map of the traversed area.
 
 A 3D printed box was created to encase the modules.
 
+The box STL (for 3D printing) is [here](./3dmodels/box-lower-part.stl), and the lid is [here](./3dmodels/box-lid-part.stl).
+
 ![3D Encasement](./imgs/box-image.png)
+<p align="center">Figure 4: Encasement CAD Design</p>
 
 ![3D Encasement](./imgs/box-solid.png)
+<p align="center">Figure 5: Encasement 3D Solid for Printing</p>
 
 ### Usage
 

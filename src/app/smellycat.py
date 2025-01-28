@@ -17,9 +17,11 @@ from scipy.stats import zscore
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 
-from app.db_adapter import DBAdapter
-from app.geo_coloring import GeoColoring
 from misc.random_hike import generate_random_hike
+
+from app.geo_coloring import GeoColoring
+
+from app.db_adapter import DBAdapter
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -314,7 +316,7 @@ class SmellyCat:
             rgb, reduced_features = self.feature_space_to_RGB(self.sensor_data_df.tail(max(3, self.NUM_SAMPLES_TO_PROCESS)), _smell, plot=False)
 
             r, g, b = rgb[0]
-            self.geomap, bounding_box = self.gcol.create_colored_hexagon_map(self.geomap, c[1], c[0], resolution=13, color=f"rgba({r}, {g}, {b}, {0.8})")
+            self.geomap, bounding_box = self.gcol.create_colored_hexagon_map(self.geomap, c[0], c[1], resolution=13, color=f"rgba({r}, {g}, {b}, {0.8})")
             self.geomap.save("geomap.html")
             self.geomap = self.gcol.capture_and_crop_bounding_box(geomap=self.geomap,
                                                                   html_file=os.path.join(Path(__file__).parent, 'geomap.html'),

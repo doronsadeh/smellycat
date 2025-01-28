@@ -53,10 +53,10 @@ class GeoColoring:
             list: List of [lat, lon] pairs representing the hexagon's boundary.
         """
         # Get the H3 index for the given lat/lon at the specified resolution
-        hex_id = h3.geo_to_h3(lat, lon, resolution)
+        hex_id = h3.latlng_to_cell(lat, lon, resolution)
 
         # Get the boundary of the hexagon
-        hex_boundary = h3.h3_to_geo_boundary(hex_id, geo_json=True)
+        hex_boundary = h3.cell_to_boundary(hex_id)
 
         return hex_boundary, hex_id
 
@@ -81,14 +81,14 @@ class GeoColoring:
         all_lats = []
         all_lons = []
         for hex_id in self.hexagons:
-            hex_boundary = h3.h3_to_geo_boundary(hex_id, geo_json=True)
+            hex_boundary = h3.cell_to_boundary(hex_id)
             lats, lons = zip(*hex_boundary)
             all_lats.extend(lats)
             all_lons.extend(lons)
 
         # Create a Folium map centered on the given coordinates
         if geomap is None:
-            geomap = folium.Map(location=[lon, lat], zoom_start=18)
+            geomap = folium.Map(location=[lat, lon], zoom_start=18)
 
         # Add the hexagon as a polygon to the map
         _polyhex = folium.Polygon(

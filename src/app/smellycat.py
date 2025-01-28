@@ -360,10 +360,6 @@ class SmellyCat:
             pass
             # print("Log: ", buf)
 
-        def on_disconnect(client, userdata, rc, properties=None):
-            if rc != 0:
-                print("Unexpected disconnection.")
-
         client = mqtt_client.Client(client_id=f"eNose-{random.randint(0, 1000)}",
                                     callback_api_version=CallbackAPIVersion.VERSION2,
                                     protocol=MQTTv5)
@@ -372,7 +368,6 @@ class SmellyCat:
         client.on_connect = on_connect
         client.on_message = on_message
         client.on_log = on_log
-        client.on_disconnect = on_disconnect
         client.connect(self.broker, self.port, clean_start=True, keepalive=60)
         return client
 

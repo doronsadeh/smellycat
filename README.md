@@ -82,9 +82,51 @@ from the separate MQTT topics fed by the above-mentioned modules.
 The server then correlates the location and gas sensing (by approximated timestamps)
 and generates the _smell image_ projected on a map of the traversed area.
 
+A 3D printed box was created to encase the modules.
+
+![3D Encasement](./imgs/box-image.png)
+
+![3D Encasement](./imgs/box-solid.png)
+
 ### Usage
 
-TBD
+To use the _Smelly Cat_ follow the next steps:
+- Set up a cloud (or any remotely accessible) server
+- Install MQTT on the server, setting it up to be remotely accessible
+- Install a MySQL instance on the server, setting it up to be remotely accessible 
+
+  > Make sure your cloud server listens to MQTT port (defaults to 1883), and the MySQL port (defaults to 3306), and no firewall rules block those ports
+
+- Create a virtual env, and run 
+  > pip install -r src/requirements.txt
+- git clone the project to the server, and open an SSH terminal to the server
+  - Set up the config file as follows:
+    - In the _smellycat.py_ main
+      <pre>
+      broker_config = {
+          "broker": "[MQTT broker IP address, i.e. the server public IP]",
+          "port": [MQTT port, default = 1883],
+          "sensor_topic": "sensorData",
+          "gps_topic": "gps/location",
+          "username": "[MQTT username]",
+          "password": "[MQTT password]",
+      }
+  
+      db_config = {
+          "user": "[DB username]",
+          "password": "[DB password]",
+          "host": "[DB host IP address, i.e. the server public IP]",
+          "database": "enose"
+      }
+      </pre>
+  - Run the server:
+      > python src/app/smelly_server.py
+  - Run the app:
+      > python src/app/smellycat.py
+- Once done running the above, open a browser window to 
+  > http://**[server IP address]**/enose/src/app/templates/index.html 
+
+  The smell map should display, and update every few seconds.
 
 ### Notes
 

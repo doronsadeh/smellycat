@@ -1,4 +1,4 @@
-pyserial
-gps3
-pynmea2
-paho-mqtt
+gps3==0.33.3
+paho-mqtt==2.1.0
+pynmea2==1.19.0
+pyserial==3.5

@@ -98,12 +98,10 @@ To use the _Smelly Cat_ follow the next steps:
 - Set up a cloud (or any remotely accessible) server
 - Install MQTT on the server, setting it up to be remotely accessible
 - Install a MySQL instance on the server, setting it up to be remotely accessible 
-
-  > Make sure your cloud server listens to MQTT port (defaults to 1883), and the MySQL port (defaults to 3306), and no firewall rules block those ports
-
-- Create a virtual env, and run 
-  > pip install -r src/requirements.txt
+  > Make sure your cloud server listens to MQTT port (defaults to 1883), 
+  > and the MySQL port (defaults to 3306), and no firewall rules block those ports
 - git clone the project to the server, and open an SSH terminal to the server
+  > cd [git clone root]/app
   - Set up the config file as follows:
     - In the _smellycat.py_ main
       <pre>
@@ -123,14 +121,23 @@ To use the _Smelly Cat_ follow the next steps:
           "database": "enose"
       }
       </pre>
+  - In a terminal run:
+      > cd ~
+      > git clone https://github.com/doronsadeh/smellycat.git
+      > cd smellycat/src
+      > export PYTHONPATH=`pwd`
+      > sudo apt update
+      > sudo apt-get install ffmpeg libsm6 libxext6  -y
+      > virtualenv .smellycat 
+      > pip install -r src/requirements.txt
   - Run the server:
       > python src/app/smelly_server.py
-  - Run the app:
+  - Once the server runs, run the app:
       > python src/app/smellycat.py
-- Once done running the above, open a browser window to 
-  > http://**[server IP address]**/enose/src/app/templates/index.html 
+  - Open a browser window to 
+      > http://**[server IP address]**/home/ubuntu/smellycat/src/app/geomap.html
 
-  The smell map should display, and update every few seconds.
+    The smell map should display, and update every few seconds.
 
 ### Notes
 

@@ -378,7 +378,7 @@ class SmellyCat:
 
 if __name__ == "__main__":
     broker_config = {
-        "broker": "54.166.148.213",
+        "broker": "smellycat.net",
         "port": 1883,
         "sensor_topic": "sensorData",
         "gps_topic": "gps/location",
@@ -389,7 +389,7 @@ if __name__ == "__main__":
     db_config = {
         'user': 'smellycat',
         'password': os.getenv("DB_PASSWORD"),
-        'host': '54.166.148.213',
+        'host': 'smellycat.net',
         'database': 'enose'
     }
 

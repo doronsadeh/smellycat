@@ -1,15 +1,17 @@
 import json
 import os
 import random
+import sys
 from datetime import datetime
 from time import sleep
 
 import pynmea2
 import serial
 from paho.mqtt import client as mqtt_client
-from paho.mqtt.client import MQTTv5
+from paho.mqtt.client import MQTTv5, MQTT_ERR_SUCCESS
 from paho.mqtt.enums import CallbackAPIVersion
 
+# TODO (!) reconnect to MQTT on disconnects!
 
 class GPSNeo6Parser:
     # GPS device settings
@@ -66,7 +68,9 @@ class GPSNeo6Parser:
                         # Send data to MQTT gps/location
                         print(gps_data)
                         payload = json.dumps(gps_data)  # Convert to JSON string
-                        self.client.publish(self.gps_topic, payload)
+                        rc = self.client.publish(self.gps_topic, payload)
+                        if rc[0] != MQTT_ERR_SUCCESS:
+                            raise Exception(f'Error: publish failed with code {rc}')
                         print(f"Published: {payload} to topic: {self.gps_topic}")
 
                     sleep(1)
@@ -79,6 +83,8 @@ class GPSNeo6Parser:
             print("\nExiting...")
         except Exception as e:
             print(f"An error occurred: {e}")
+        finally:
+            raise Exception(f'Error: General error, retrying ...')
 
     def connect_mqtt(self):
         def on_connect(client, userdata, flags, reasonCode, properties):
@@ -109,8 +115,13 @@ class GPSNeo6Parser:
         return client
 
     def run(self):
-        self.client = self.connect_mqtt()
-        self.parse_gps_data()
+        while True:
+            self.client = self.connect_mqtt()
+            try:
+                self.parse_gps_data()
+            except:
+                print(f"Error parsing GPS data (retrying): {sys.exc_info()[0], sys.exc_info()[1]}")
+
 
 
 # Run the GPS parser

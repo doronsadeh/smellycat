@@ -37,7 +37,7 @@ const char* ssid = "smellycat";
 const char* password = "smellycat";
 
 // MQTT parameters
-const char* mqttServer = "smellycat.net";
+const char* mqttServer = "smellycat.doronsadeh.me";
 const int mqttPort = 1883;
 const char* mqttUser = "ubuntu";
 const char* mqttPassword = "2B-ornot-2B";

@@ -116,7 +116,7 @@ class GPSNeo6Parser:
 # Run the GPS parser
 if __name__ == "__main__":
     broker_config = {
-        "broker": "smellycat.net",
+        "broker": "smellycat.doronsadeh.me",
         "port": 1883,
         "gps_topic": "gps/location",
         "username": "ubuntu",

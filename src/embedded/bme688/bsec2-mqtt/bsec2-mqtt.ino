@@ -24,6 +24,7 @@
 
 #include "mqtt_datalogger.h"
 #include <WiFi.h>
+#include <WiFiClient.h>
 #include <PubSubClient.h>
 
 /* Macros used */

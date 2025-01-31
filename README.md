@@ -95,13 +95,18 @@ The box STL (for 3D printing) is [here](./3dmodels/box-lower-part.stl), and the 
 ### Usage
 
 To use the _Smelly Cat_ follow the next steps:
+- Connect to the onboard Pi Zero
+  - Copy _src/gpsneo6/neo6_parser.py_ to the Pi Zero
+  - Copy the _src/gpsneo6/startcat.sh_ script to the PI zero
+  - Modify Pi Zero ~/.bashrc adding the following line at the end of the script
+    >   source /home/pi/startcat.sh
 - Set up a cloud (or any remotely accessible) server
-- Install MQTT on the server, setting it up to be remotely accessible
-- Install a MySQL instance on the server, setting it up to be remotely accessible 
-  > Make sure your cloud server listens to MQTT port (defaults to 1883), 
-  > and the MySQL port (defaults to 3306), and no firewall rules block those ports
-- git clone the project to the server, and open an SSH terminal to the server
-  > cd [git clone root]/app
+  - Install MQTT on the server, setting it up to be remotely accessible
+  - Install a MySQL instance on the server, setting it up to be remotely accessible 
+    >   Make sure your cloud server listens to MQTT port (defaults to 1883), 
+    >   and the MySQL port (defaults to 3306), and no firewall rules block those ports
+  - git clone the project to the server, and open an SSH terminal to the server
+    >   cd [git clone root]/app
   - Set up the config file as follows:
     - In the _smellycat.py_ main
       <pre>
@@ -122,20 +127,20 @@ To use the _Smelly Cat_ follow the next steps:
       }
       </pre>
   - In a terminal run:
-      > cd ~
-      > git clone https://github.com/doronsadeh/smellycat.git
-      > cd smellycat/src
-      > export PYTHONPATH=`pwd`
-      > sudo apt update
-      > sudo apt-get install ffmpeg libsm6 libxext6  -y
-      > virtualenv .smellycat 
-      > pip install -r src/requirements.txt
+    >   cd ~
+    >   git clone https://github.com/doronsadeh/smellycat.git
+    >   cd smellycat/src
+    >   export PYTHONPATH=`pwd`
+    >   sudo apt update
+    >   sudo apt-get install ffmpeg libsm6 libxext6  -y
+    >   virtualenv .smellycat 
+    >   pip install -r src/requirements.txt
   - Run the server:
-      > python src/app/smelly_server.py
+    >   python src/app/smelly_server.py
   - Once the server runs, run the app:
-      > python src/app/smellycat.py
+    >   python src/app/smellycat.py
   - Open a browser window to 
-      > http://**[server IP address]**/home/ubuntu/smellycat/src/app/geomap.html
+    >   http://**[server IP address]**/home/ubuntu/smellycat/src/app/geomap.html
 
     The smell map should display, and update every few seconds.
 
